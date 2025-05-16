@@ -11,6 +11,20 @@ def get_extension(filename):
     return filename.suffix[1:].lower() if filename.suffix else "no_ext"
 
 
+# Remove empty dirs
+def remove_empty_dirs(path):
+    # 🛣️ Traverse directories from bottom up
+    for dirpath, dirnames, filenames in os.walk(path, topdown=False):
+        # 📂 If no subdirs and no files, it’s empty
+        if not dirnames and not filenames:
+            # ❌ Remove the empty directory
+            os.rmdir(dirpath)
+
+
+if __name__ == "__main__":
+    remove_empty_dirs("path/to/your/root")
+
+
 # Prompt the user for yes/no confirmation (used in interactive mode)
 def confirm(prompt):
     try:
@@ -21,7 +35,14 @@ def confirm(prompt):
 
 # Main function that performs sorting based on extensions
 def sort_files(
-    directory, *, copy=False, verbose=False, dry=False, force=False, interactive=False
+    directory,
+    *,
+    copy=False,
+    verbose=False,
+    dry=False,
+    force=False,
+    interactive=False,
+    recursive=False,
 ):
     directory = Path(directory).expanduser().resolve()
 
@@ -31,17 +52,20 @@ def sort_files(
         return
 
     # Gather only files in the given directory
-    files = [f for f in directory.iterdir() if f.is_file()]
-    if not files:
-        print("📂 No files to sort.")
-        return
+    if not recursive:
+        files = [f for f in directory.iterdir() if f.is_file()]
+        if not files:
+            print("📂 No files to sort.")
+            return
+    # Gather files the entire directory recursively
+    elif recursive:
+        files = [f for f in directory.rglob("*") if f.is_file()]
 
     ext_map = {}  # Dictionary to store extension -> list of filenames
 
     for file in files:
         ext = get_extension(file)  # e.g., "pdf", "exe"
         target_dir = directory / ext  # Create subfolder like ~/Downloads/pdf
-        # target_dir.mkdir(exist_ok=True)
 
         target_path = target_dir / file.name
 
@@ -76,6 +100,11 @@ def sort_files(
         if verbose or dry:
             print(f"📁 Created directory: {target_dir}")
             print(f"    📄 {action}: {file.name} → {ext}/")
+
+        if recursive:
+            if confirm("Remove Empty dirs?"):
+                remove_empty_dirs(directory)
+
         # Track sorted files for summary/logging
         ext_map.setdefault(ext, []).append(file.name)
 
@@ -125,6 +154,12 @@ def main():
     parser.add_argument(
         "-u", "--unique", action="store_true", help="Show unique extensions and exit"
     )
+    parser.add_argument(
+        "-r",
+        "--recursive",
+        action="store_true",
+        help="Recursively sort sub-directories as well",
+    )
 
     args = parser.parse_args()
 
@@ -140,6 +175,7 @@ def main():
             dry=args.dry,
             force=args.force,
             interactive=args.interactive,
+            recursive=args.recursive,
         )
 
 
