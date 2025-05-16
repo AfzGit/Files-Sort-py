@@ -101,13 +101,11 @@ def sort_files(
             print(f"📁 Created directory: {target_dir}")
             print(f"    📄 {action}: {file.name} → {ext}/")
 
-        if recursive:
-            if confirm("Remove Empty dirs?"):
-                remove_empty_dirs(directory)
-
         # Track sorted files for summary/logging
         ext_map.setdefault(ext, []).append(file.name)
-
+    if recursive:
+        if confirm("Remove Empty dirs?"):
+            remove_empty_dirs(directory)
     return ext_map
 
 
