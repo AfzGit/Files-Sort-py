@@ -60,26 +60,23 @@ def sort_files(
     ext_map = {}  # Dictionary to store extension -> list of filenames
 
     for file in files:
-        ext = get_extension(file)  # e.g., "pdf", "exe"
-        target_dir = directory / ext  # Create subfolder like ~/Downloads/pdf
-
-        target_path = target_dir / file.name
+        ext = get_extension(file)  # e.g., "pdf", "exe", "txt"
+        target_dir = directory / ext  # Create subfolder like folder/txt
+        target_path = target_dir / file.name # folder/file.txt
 
         # Handle file already existing at target location
-        if target_path.exists() and not force:
+        if target_path.exists():
             if not confirm(f"❓ {target_path} exists. Overwrite?"):
-                print(f"⏩ Skipped: {file.name}")
+                print(f"    ⏩ Skipped: {file.name}")
                 continue
 
-        if interactive and not force:
-            if not copy and not confirm(f"❓ Move {file.name} to {target_dir}?"):
-                continue
-            if copy and not confirm(f"❓ Copy {file.name} to {target_dir}?"):
+        if interactive:
+            if not confirm(f"Copy/Move {file.name} to {target_dir}?"):
                 continue
 
         # Dry-run just prints what *would* happen
         if dry:
-            action = "Would copy" if copy else "Would move"
+            print(f"📄 {"(Dry) copy" if copy else "(Dry) move"}: {file.name} → {ext}/")
         else:
             try:
                 if not target_dir.exists():
@@ -87,22 +84,27 @@ def sort_files(
                     print(f"📁 Created directory: {target_dir}")
                 if copy:
                     shutil.copy2(file, target_path)  # Copy file (with metadata)
-                    if verbose or dry:
+                    if verbose:
                         print(f"    📄 Copied: {file.name} → {ext}/")
                 else:
                     shutil.move(file, target_path)  # Move file
-                    if verbose or dry:
+                    if verbose:
                         print(f"    📄 Moved: {file.name} → {ext}/")
             except Exception as e:
                 print(f"❌ Error: {e}")
                 continue
 
         # Track sorted files for summary/logging
-        ext_map.setdefault(ext, []).append(file.name)
+        # ext_map.setdefault(ext, []).append(file.name)
 
-    if recursive and interactive and not dry:
-        if confirm("Remove Empty dirs?"):
+    if recursive:
+        if force:
             remove_empty_dirs(directory)
+        if confirm("Remove Empty dirs?"):
+            if not dry:
+                remove_empty_dirs(directory)
+            if verbose or dry:
+                print(f"Removed empty directory: {directory}")
 
     return ext_map
 
