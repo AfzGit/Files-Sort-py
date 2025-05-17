@@ -141,10 +141,10 @@ def main():
         "-v", "--verbose", action="store_true", help="Enable verbose output"
     )
     parser.add_argument(
-        "-i", "--interactive", action="store_true", help="Prompt before overwrite"
+        "-i", "--interactive", action="store_true", help="Prompt before actions"
     )
     parser.add_argument(
-        "-f", "--force", action="store_true", help="Force overwrite existing files"
+        "-f", "--force", action="store_true", help="Prevent prompts and proceed with changes"
     )
     parser.add_argument(
         "-d", "--dry", action="store_true", help="Dry run (simulate actions)"
