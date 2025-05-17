@@ -71,7 +71,7 @@ def sort_files(
                 continue
 
         if interactive:
-            if not confirm(f"Copy/Move {file.name} to {target_dir}?"):
+            if not confirm(f"{"Copy" if copy else "Move"} {file.name} to {target_dir}?"):
                 continue
 
         # Dry-run just prints what *would* happen
