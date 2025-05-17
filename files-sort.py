@@ -21,10 +21,6 @@ def remove_empty_dirs(path):
             os.rmdir(dirpath)
 
 
-if __name__ == "__main__":
-    remove_empty_dirs("path/to/your/root")
-
-
 # Prompt the user for yes/no confirmation (used in interactive mode)
 def confirm(prompt):
     try:
@@ -86,26 +82,28 @@ def sort_files(
             action = "Would copy" if copy else "Would move"
         else:
             try:
-                target_dir.mkdir(exist_ok=True)
+                if not target_dir.exists():
+                    target_dir.mkdir(exist_ok=True)
+                    print(f"📁 Created directory: {target_dir}")
                 if copy:
                     shutil.copy2(file, target_path)  # Copy file (with metadata)
-                    action = "Copied"
+                    if verbose or dry:
+                        print(f"    📄 Copied: {file.name} → {ext}/")
                 else:
                     shutil.move(file, target_path)  # Move file
-                    action = "Moved"
+                    if verbose or dry:
+                        print(f"    📄 Moved: {file.name} → {ext}/")
             except Exception as e:
                 print(f"❌ Error: {e}")
                 continue
 
-        if verbose or dry:
-            print(f"📁 Created directory: {target_dir}")
-            print(f"    📄 {action}: {file.name} → {ext}/")
-
         # Track sorted files for summary/logging
         ext_map.setdefault(ext, []).append(file.name)
-    if recursive:
+
+    if recursive and interactive and not dry:
         if confirm("Remove Empty dirs?"):
             remove_empty_dirs(directory)
+
     return ext_map
 
 
