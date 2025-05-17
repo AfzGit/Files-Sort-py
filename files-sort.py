@@ -48,6 +48,11 @@ def sort_files(
         print(f"❌ Error: {directory} is not a valid directory.")
         return
 
+    # 'Force' and 'Interactive' are not to be used together
+    if force and interactive:
+        print("Force and interactive are not compatible with each other. Exiting...")
+        return
+
     # Gather only files in the given directory
     if not recursive:
         files = [f for f in directory.iterdir() if f.is_file()]
@@ -63,12 +68,14 @@ def sort_files(
         target_dir = directory / ext  # Create subfolder like folder/txt
         target_path = target_dir / file.name # folder/file.txt
 
-        # Handle file already existing at target location
-        if target_path.exists():
+        # Handle file already existing at target location (if force, then overwrite anyways)
+        if target_path.exists() and not force:
+            # Ask for overwrite
             if not confirm(f"❓ {target_path} exists. Overwrite?"):
                 print(f"    ⏩ Skipped: {file.name}")
-                continue
+                continue # no overwriting, skip this file
 
+        # Ask before copying/moving each file
         if interactive:
             if not confirm(f"{"Copy" if copy else "Move"} {file.name} to {target_dir}?"):
                 continue
@@ -99,14 +106,13 @@ def sort_files(
     if recursive:
         if force:
             remove_empty_dirs(directory)
-        if confirm("Remove Empty dirs?"):
+        elif confirm("Remove Empty dirs?"):
             if not dry:
                 remove_empty_dirs(directory)
             if verbose or dry:
                 print(f"Removed empty directory: {directory}")
 
     return ext_map
-
 
 # Count and list unique file extensions in the given directory
 def count_unique_extensions(directory):
@@ -120,7 +126,6 @@ def count_unique_extensions(directory):
     print(f"🔢 Unique extensions: {len(extensions)}")
     for ext in sorted(extensions):
         print(f" - {ext}")
-
 
 # Argument parser and CLI logic
 def main():
@@ -143,7 +148,7 @@ def main():
         "-i", "--interactive", action="store_true", help="Prompt before actions"
     )
     parser.add_argument(
-        "-f", "--force", action="store_true", help="Prevent prompts and proceed with changes"
+        "-f", "--force", action="store_true", help="Prevent prompts and proceed with changes, overwrites already existing files without prompt"
     )
     parser.add_argument(
         "-d", "--dry", action="store_true", help="Dry run (simulate actions)"
