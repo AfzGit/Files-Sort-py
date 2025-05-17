@@ -41,6 +41,7 @@ def sort_files(
     recursive=False,
 ):
     directory = Path(directory).expanduser().resolve()
+    ext_map = {}  # Dictionary to store extension -> list of filenames
 
     # Check if the directory exists
     if not directory.is_dir():
@@ -56,8 +57,6 @@ def sort_files(
     # Gather files the entire directory recursively
     elif recursive:
         files = [f for f in directory.rglob("*") if f.is_file()]
-
-    ext_map = {}  # Dictionary to store extension -> list of filenames
 
     for file in files:
         ext = get_extension(file)  # e.g., "pdf", "exe", "txt"
