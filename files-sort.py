@@ -163,11 +163,11 @@ def sort_files(
                 if copy:
                     shutil.copy2(file, target_path)  # Copy file (with metadata)
                     if verbose:
-                        print(f"=    📄 Copied: {file.name} → {ext}/")
+                        print(f"= 📝 Copied: {file.name} → {ext}/")
                 else:
                     shutil.move(file, target_path)  # Move file
                     if verbose:
-                        print(f"=    📄 Moved: {file.name} → {ext}/")
+                        print(f"= 🚚 Moved: {file.name} → {ext}/")
             except Exception as e:
                 print(f"❌ Error: {e}")
                 skipped += 1
@@ -178,16 +178,25 @@ def sort_files(
 
     if recursive:
         print("=== CLEANUP ===")
-        remd_dirs = ""
-        if force:
-            remd_dirs = remove_empty_dirs(directory, dry=False)
-        elif confirm("=❓ Remove Empty dirs?"):
-            remd_dirs = remove_empty_dirs(directory, dry)
+        empty = True
+        remd_dirs = remove_empty_dirs(directory, dry=True)
         if not remd_dirs:
             print("= No empty dirs found")
+            empty = True
         else:
             for dir in remd_dirs:
-                print(f"= 🗑️ Removed: {dir}")
+                print(f"Found empty dir: [{dir}]")
+            empty = False
+
+        if force and not empty:
+            remove_empty_dirs(directory, dry=False)
+            for dir in remd_dirs:
+                print(f"= 🗑️ Removed: [{dir}]")
+        elif confirm("=❓ Remove Empty dirs?"):
+            remd_dirs = remove_empty_dirs(directory, dry)
+            if remd_dirs:
+                for dir in remd_dirs:
+                    print(f"= 🗑️ Removed: [{dir}]")
 
     if not dry:
         print("=== SORTED DIRECTORY ===")
