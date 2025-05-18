@@ -138,17 +138,17 @@ def final_summary(total, processed, skipped, directory):
 
 
 # Count and list unique file extensions in the given directory
-def count_unique_extensions(directory):
+def count_unique_extensions(directory, recursive):
     directory = Path(directory).expanduser().resolve()
     if not directory.is_dir():
         print(f"❌ Error: {directory} is not a valid directory.")
         sys.exit(1)
 
     # Use a set to gather unique extensions
-    extensions = {get_extension(f) for f in directory.iterdir() if f.is_file()}
-    print(f"🔢 Unique extensions: {len(extensions)}")
-    for ext in sorted(extensions):
-        print(f" - {ext}")
+    if recursive:
+        extensions = {get_extension(f) for f in directory.rglob("*") if f.is_file()}
+    else:
+        extensions = {get_extension(f) for f in directory.iterdir() if f.is_file()}
 
     return len(extensions), sorted(extensions)
 
@@ -192,7 +192,10 @@ def main():
 
     # Just list unique extensions and exit
     if args.unique:
-        count_unique_extensions(args.directory)
+        ext_len, ext_dict = count_unique_extensions(args.directory, args.recursive)
+        print(f"🔢 Unique extensions: {ext_len}")
+        for ext in ext_dict:
+            print(f" - {ext}")
     else:
         # Run the file sorting function
         sort_files(
