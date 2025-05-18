@@ -100,23 +100,22 @@ def sort_files(
             print(f"📁 Create directory: {target_dir}")
         print(f"    📄 {'Copy' if copy else 'Move'}: {file.name} → {ext}/")
 
-    # Confirm before running
+    # Confirm before running unless -f
     if not force:
         if not confirm("Proceed?"):
             sys.exit(1)
             
     # Create directories
     for file in files:
-        # ext folder
         ext_dir = directory / get_extension(file)  
-
         if not ext_dir.exists():
             ext_dir.mkdir(exist_ok=True)
             print(f"📁 Created directory: {ext_dir}")
 
+    # Copy/Move/Dry actions
     for file in files:
         total += 1
-        ext = get_extension(file)  # e.g., "pdf", "exe", "txt"
+        ext = get_extension(file)  # "pdf", "exe", "txt"
         target_dir = directory / ext  # Create subfolder like folder/txt
         target_path = target_dir / file.name # folder/file.txt
 
