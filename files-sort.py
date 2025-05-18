@@ -5,6 +5,7 @@ import shutil
 import argparse
 from pathlib import Path
 
+ 
 
 # Get the extension of a file, e.g. "pdf", "exe", or "no_ext" if none.
 def get_extension(filename):
@@ -20,6 +21,7 @@ def remove_empty_dirs(path):
             # ❌ Remove the empty directory
             os.rmdir(dirpath)
 
+    return f"Removed empty directory: {dirpath}"
 
 # Prompt the user for yes/no confirmation (used in interactive mode)
 def confirm(prompt):
@@ -43,6 +45,11 @@ def sort_files(
     directory = Path(directory).expanduser().resolve()
     ext_map = {}  # Dictionary to store extension -> list of filenames
 
+    # Counters
+    total = 0
+    skipped = 0
+    processed = 0
+
     # Check if the directory exists
     if not directory.is_dir():
         print(f"❌ Error: {directory} is not a valid directory.")
@@ -64,6 +71,7 @@ def sort_files(
         files = [f for f in directory.rglob("*") if f.is_file()]
 
     for file in files:
+        total += 1
         ext = get_extension(file)  # e.g., "pdf", "exe", "txt"
         target_dir = directory / ext  # Create subfolder like folder/txt
         target_path = target_dir / file.name # folder/file.txt
@@ -71,20 +79,24 @@ def sort_files(
         # Handle file already existing at target location (if force, then overwrite anyways)
         if target_path.exists() and not force:
             # Ask for overwrite
-            if not confirm(f"❓ {target_path} exists. Overwrite?"):
+            if interactive and not confirm(f"❓ {target_path} exists. Overwrite?"):
                 print(f"    ⏩ Skipped: {file.name}")
+                skipped += 1
                 continue # no overwriting, skip this file
 
         # Ask before copying/moving each file
-        if interactive:
-            if not confirm(f"{"Copy" if copy else "Move"} {file.name} to {target_dir}?"):
-                continue
+        # if interactive:
+        #     if not confirm(f"❓ {'Copy' if copy else 'Move'} {file.name} to {target_dir}?"):
+        #         skipped += 1
+        #         continue
 
         # Dry-run just prints what *would* happen
         if dry:
+            processed += 1
             print(f"📄 {"(Dry) copy" if copy else "(Dry) move"}: {file.name} → {ext}/")
         else:
             try:
+                processed += 1
                 if not target_dir.exists():
                     target_dir.mkdir(exist_ok=True)
                     print(f"📁 Created directory: {target_dir}")
@@ -98,21 +110,31 @@ def sort_files(
                         print(f"    📄 Moved: {file.name} → {ext}/")
             except Exception as e:
                 print(f"❌ Error: {e}")
+                skipped += 1
                 continue
 
         # Track sorted files for summary/logging
-        # ext_map.setdefault(ext, []).append(file.name)
+        ext_map.setdefault(ext, []).append(file.name)
 
     if recursive:
         if force:
             remove_empty_dirs(directory)
-        elif confirm("Remove Empty dirs?"):
+        elif confirm("❓ Remove Empty dirs?"):
             if not dry:
                 remove_empty_dirs(directory)
             if verbose or dry:
-                print(f"Removed empty directory: {directory}")
+                print(f"Removed empty directories in: {directory}")
+
+    final_summary(total, processed, skipped, directory)
 
     return ext_map
+
+def final_summary(total, processed, skipped, directory):
+    print(f"\n📊 Summary: {directory}")
+    print(f"   Total files found:     {total}")
+    print(f"   Files moved/copied:    {processed}")
+    print(f"   Files skipped:         {skipped}")
+
 
 # Count and list unique file extensions in the given directory
 def count_unique_extensions(directory):
@@ -145,7 +167,7 @@ def main():
         "-v", "--verbose", action="store_true", help="Enable verbose output"
     )
     parser.add_argument(
-        "-i", "--interactive", action="store_true", help="Prompt before actions"
+        "-i", "--interactive", action="store_true", help="Prompt before overwriting"
     )
     parser.add_argument(
         "-f", "--force", action="store_true", help="Prevent prompts and proceed with changes, overwrites already existing files without prompt"
