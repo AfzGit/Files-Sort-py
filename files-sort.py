@@ -92,26 +92,31 @@ def sort_files(
         print(f)
 
     # Sample output before running
-    print(f"--- 📂 [{directory}] 📂 ---")
+    print("=== DETAILS ===")
+    print(f"= ➡ 📂 [{directory}]")
+    print(f"= ➡ 🎬 Action: {'Copying 📝' if copy else 'Moving 🚚'}")
 
     # Create Dir if it doesn't exists, else skip
     # Sample copy and move files 
+    print("=== ACTIONS ===")
     seen_exts = set()
     for file in files:
         ext = get_extension(file)  # e.g., "pdf", "exe", "txt"
         ext_dir = directory / ext
         if ext_dir.exists():
-            print(f"❌📁 [{ext_dir}] (Already exists)")
+            print(f"= ❌ 📁 [{ext_dir}] (Already exists)")
             seen_exts.add(ext)
         if ext not in seen_exts:
-            print(f"✅📁 [{ext_dir}]")
+            print(f"= ✅ 📁 [{ext_dir}]")
             seen_exts.add(ext)
         # print(f"    📄 {'Copy' if copy else 'Move'}: {file.name} → {ext}/")
-        print(f"    📄 {file.name}")
-
+        print(f"=    ➡ 📄 {file.name}")
+    print("=== CONFIRMATION ===")
     # Confirm before running unless -f
     if not force:
-        if not confirm("Proceed?"):
+        if not confirm("= Proceed?"):
+            print("= Status: ❌ Stopped")
+            print("=== End ===")
             sys.exit(1)
             
     # Create directories
