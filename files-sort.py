@@ -79,12 +79,12 @@ def sort_files(
     # Gather only files in the given directory
     if not recursive:
         files = [f for f in directory.iterdir() if f.is_file()]
-        if not files:
-            print("📂 No files to sort.")
-            return
     # Gather files the entire directory recursively
     elif recursive:
         files = [f for f in directory.rglob("*") if f.is_file()]
+    if not files:
+        print("📂 No files to sort.")
+        return
 
     # sort files by ext (file.a, file.b, ..., file.z)
     sorted(files, key=lambda x: x.rsplit('.', 1)[-1])
