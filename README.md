@@ -30,7 +30,7 @@ A Python utility to **organize files into subfolders based on their extensions**
 | --------------------- | --------------------------------------------------------------------------------- |
 | `-c`, `--copy`        | Copy files instead of moving them                                                 |
 | `-v`, `--verbose`     | Enable verbose output (show moved/copied files)                                   |
-| `-i`, `--interactive` | Prompt before each file is moved/copied                                           |
+| `-i`, `--interactive` | Prompt before overwriting                                                         |
 | `-f`, `--force`       | Overwrite existing files and suppress prompts (incompatible with `--interactive`) |
 | `-d`, `--dry`         | Perform a dry run (simulate actions without changes)                              |
 | `-u`, `--unique`      | List all unique file extensions in the directory and exit                         |
