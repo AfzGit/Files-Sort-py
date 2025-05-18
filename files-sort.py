@@ -190,13 +190,12 @@ def sort_files(
         if not empty:
             if force:
                 remove_empty_dirs(directory, dry=False)
-            if confirm("=❓ Remove Empty dirs?"):
+            elif confirm("=❓ Remove Empty dirs?"):
                 remove_empty_dirs(directory, dry)
                 for dir in remd_dirs:
                     print(f"= 🗑️ Removed: [{dir}]")
             else:
-                for dir in remd_dirs:
-                    print(f"= ❌️ Did not remove: [{dir}]")
+                print(f"= ❌️ Did not remove empty directories")
 
 
     if not dry:
