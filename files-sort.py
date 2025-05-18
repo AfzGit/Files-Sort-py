@@ -87,10 +87,12 @@ def sort_files(
         return
 
     # sort files by ext (file.a, file.b, ..., file.z)
-    sorted(files, key=lambda x: x.suffix.lstrip('.'))
+    files = sorted(files, key=lambda x: x.suffix.lstrip('.').lower())
+    for f in files:
+        print(f)
 
     # Sample output before running
-    print(f"--- 📂 Operating inside [{directory}] 📂 ---")
+    print(f"--- 📂 [{directory}] 📂 ---")
 
     # Create Dir if it doesn't exists, else skip
     # Sample copy and move files 
@@ -99,13 +101,13 @@ def sort_files(
         ext = get_extension(file)  # e.g., "pdf", "exe", "txt"
         ext_dir = directory / ext
         if ext_dir.exists():
-            print(f"⏩ Skipping {ext_dir}, folder already exists")
+            print(f"❌📁 [{ext_dir}] (Already exists)")
             seen_exts.add(ext)
-            continue
         if ext not in seen_exts:
-            print(f"📁 Create directory: [{ext_dir}]")
+            print(f"✅📁 [{ext_dir}]")
             seen_exts.add(ext)
-        print(f"    📄 {'Copy' if copy else 'Move'}: {file.name} → {ext}/")
+        # print(f"    📄 {'Copy' if copy else 'Move'}: {file.name} → {ext}/")
+        print(f"    📄 {file.name}")
 
     # Confirm before running unless -f
     if not force:
