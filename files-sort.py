@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 import shutil
 import argparse
 from pathlib import Path
@@ -141,13 +142,15 @@ def count_unique_extensions(directory):
     directory = Path(directory).expanduser().resolve()
     if not directory.is_dir():
         print(f"❌ Error: {directory} is not a valid directory.")
-        return
+        sys.exit(1)
 
     # Use a set to gather unique extensions
     extensions = {get_extension(f) for f in directory.iterdir() if f.is_file()}
     print(f"🔢 Unique extensions: {len(extensions)}")
     for ext in sorted(extensions):
         print(f" - {ext}")
+
+    return len(extensions), sorted(extensions)
 
 # Argument parser and CLI logic
 def main():
