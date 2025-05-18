@@ -120,6 +120,7 @@ def sort_files(
             sys.exit(1)
         else:
             print("= 🚧 Status: ✅ Proceed")
+            print("=== WORKING ===")
             
     # Create directories
     for file in files:
@@ -128,9 +129,11 @@ def sort_files(
             ext_dir = directory / ext
             if not ext_dir.exists():
                 ext_dir.mkdir(exist_ok=True)
-                print(f"📁 Created directory: {ext_dir}")
+                if verbose:
+                    print(f"= 📁 Created directory: {ext_dir}")
             else:
-                print(f"⏩ Skipping {ext_dir}, folder already exists")
+                if verbose:
+                    print(f"= ⏩ Skipping {ext_dir}, folder already exists")
 
     # Copy/Move/Dry actions
     for file in files:
@@ -143,25 +146,25 @@ def sort_files(
         if target_path.exists() and not force:
             # Ask for overwrite
             if interactive and not confirm(f"❓ {target_path} exists. Overwrite?"):
-                print(f"    ⏩ Skipped: {file.name}")
+                print(f"=    ⏩ Skipped: {file.name}")
                 skipped += 1
                 continue # no overwriting, skip this file
 
         # Dry-run just prints what *would* happen
         if dry:
             processed += 1
-            print(f"    📄 {"(Dry) copy" if copy else "(Dry) move"}: {file.name} → {ext}/")
+            print(f"=    📄 {"(Dry) copy" if copy else "(Dry) move"}: {file.name} → {ext}/")
         else:
             try:
                 processed += 1
                 if copy:
                     shutil.copy2(file, target_path)  # Copy file (with metadata)
                     if verbose:
-                        print(f"    📄 Copied: {file.name} → {ext}/")
+                        print(f"=    📄 Copied: {file.name} → {ext}/")
                 else:
                     shutil.move(file, target_path)  # Move file
                     if verbose:
-                        print(f"    📄 Moved: {file.name} → {ext}/")
+                        print(f"=    📄 Moved: {file.name} → {ext}/")
             except Exception as e:
                 print(f"❌ Error: {e}")
                 skipped += 1
@@ -174,23 +177,34 @@ def sort_files(
         remd_dirs = ""
         if force:
             remd_dirs = remove_empty_dirs(directory, dry=False)
-        elif confirm("❓ Remove Empty dirs?"):
+        elif confirm("=❓ Remove Empty dirs?"):
             remd_dirs = remove_empty_dirs(directory, dry)
         for dir in remd_dirs:
-            print(f"🗑️ Removed: {dir}")
+            print(f"= 🗑️ Removed: {dir}")
 
-    print("Sorted directory:")
-    for item in os.listdir(directory):
-        print(f"- {item}")
+    if not dry:
+        print("=== SORTED DIRECTORY ===")
+        entries = os.listdir(directory)
+        # 🧠 Sort: folders first, then files; each group alphabetically
+        entries.sort(key=lambda x: (not os.path.isdir(os.path.join(directory, x)), x.lower()))
+        for item in entries:
+            full_path = os.path.join(directory, item)
+            if os.path.isdir(full_path):
+                print(f"= 📂 {item}")
+            else:
+                print(f"= 📄 {item}")
+
+    print("=== FINAL SUMMARY ===")
     final_summary(total, processed, skipped, directory)
+    print("=== END ===")
 
     return ext_map
 
 def final_summary(total, processed, skipped, directory):
-    print(f"\n📊 Summary: {directory}")
-    print(f"   Total files found:     {total}")
-    print(f"   Files moved/copied:    {processed}")
-    print(f"   Files skipped:         {skipped}")
+    print(f"= 📊 Sorted: {directory}")
+    print(f"= 🗃️ Total files found:     {total}")
+    print(f"= 🚚 Files moved/copied:    {processed}")
+    print(f"= ⏩ Files skipped:         {skipped}")
 
 
 def main():
