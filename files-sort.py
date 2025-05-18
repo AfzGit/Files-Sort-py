@@ -86,22 +86,24 @@ def sort_files(
     elif recursive:
         files = [f for f in directory.rglob("*") if f.is_file()]
 
+    # sort files by ext (file.a, file.b, ..., file.z)
+    sorted(files, key=lambda x: x.rsplit('.', 1)[-1])
+
     # Sample before running
+    print(f"--- 📂 Operating directory {directory} 📂 ---")
     for file in files:
-        ext = get_extension(file)  # e.g., "pdf", "exe", "txt"
-        target_dir = directory / ext  # Create subfolder like folder/txt
-        target_path = target_dir / file.name # folder/file.txt
+        ext = get_extension(file)  # "pdf", "exe", "txt"
+        target_dir = directory / ext  # "folder/txt"
         
-        # Create Dir
+        # Create Dir if it doesn't exists and move/copy files
         if not target_dir.exists():
-            print(f"📁 Created directory: {target_dir}")
+            print(f"📁 Create directory: {target_dir}")
+        print(f"    📄 {'Copy' if copy else 'Move'}: {file.name} → {ext}/")
 
-        # Move/Copy files
-        print(f"📄 {'Copy' if copy else 'Move'}: {file.name} → {ext}/")
-
-        if not force:
-            if not confirm("Proceed?"):
-                sys.exit(1)
+    # Confirm before running
+    if not force:
+        if not confirm("Proceed?"):
+            sys.exit(1)
             
     # Create directories
     for file in files:
