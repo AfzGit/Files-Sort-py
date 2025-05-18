@@ -92,25 +92,19 @@ def sort_files(
     # Sample output before running
     print(f"--- 📂 Operating inside [{directory}] 📂 ---")
 
-    # Create Dir if it doesn't exists and move/copy files
+    # Create Dir if it doesn't exists, else skip
+    # Sample copy and move files 
     seen_exts = set()
     for file in files:
         ext = get_extension(file)  # e.g., "pdf", "exe", "txt"
-        if ext not in seen_exts:
-            ext_dir = directory / ext
-            print(f"📁 Create directory: [{ext_dir}]")
-            seen_exts.add(ext)
+        ext_dir = directory / ext
         if ext_dir.exists():
             print(f"⏩ Skipping {ext_dir}, folder already exists")
             seen_exts.add(ext)
-
-        
-    for file in files:
-        ext = get_extension(file)  # "pdf", "exe", "txt"
-        target_dir = directory / ext  # "folder/txt"
-        
-        if not target_dir.exists():
-            print(f"📁 Create directory: [{target_dir}]")
+            continue
+        if ext not in seen_exts:
+            print(f"📁 Create directory: [{ext_dir}]")
+            seen_exts.add(ext)
         print(f"    📄 {'Copy' if copy else 'Move'}: {file.name} → {ext}/")
 
     # Confirm before running unless -f
