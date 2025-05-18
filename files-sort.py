@@ -133,16 +133,13 @@ def sort_files(
         ext_map.setdefault(ext, []).append(file.name)
 
     if recursive:
+        remd_dirs = ""
         if force:
-            remove_empty_dirs(directory, dry=False)
+            remd_dirs = remove_empty_dirs(directory, dry=False)
         elif confirm("❓ Remove Empty dirs?"):
-            if not dry:
-                remove_empty_dirs(directory, dry=False)
-            if verbose or dry:
-                remd_dirs = remove_empty_dirs(directory, dry=True)
-                print(f"Removed empty directories in: {directory}")
-                for dir in remd_dirs:
-                    print(f"🗑️ Removed: {dir}")
+            remd_dirs = remove_empty_dirs(directory, dry)
+        for dir in remd_dirs:
+            print(f"🗑️ Removed: {dir}")
 
     final_summary(total, processed, skipped, directory)
 
