@@ -93,7 +93,7 @@ def sort_files(
 
     # Sample output before running
     print("=== DETAILS ===")
-    print(f"= ➡ 📂 [{directory}]")
+    print(f"= ➡ 📂 Directory:  [{directory}]")
     print(f"= ➡ 🎬 Action: {'Copying 📝' if copy else 'Moving 🚚'}")
 
     # Create Dir if it doesn't exists, else skip
@@ -114,10 +114,12 @@ def sort_files(
     print("=== CONFIRMATION ===")
     # Confirm before running unless -f
     if not force:
-        if not confirm("= Proceed?"):
-            print("= Status: ❌ Stopped")
+        if not confirm("= ❓ Proceed?"):
+            print("= 🚧 Status: ❌ Stopped")
             print("=== End ===")
             sys.exit(1)
+        else:
+            print("= 🚧 Status: ✅ Proceed")
             
     # Create directories
     for file in files:
