@@ -123,17 +123,20 @@ def sort_files(
             print("=== WORKING ===")
             
     # Create directories
+    seen_exts = set()  # Make sure this is defined before the loop
     for file in files:
         ext = get_extension(file)
         if ext not in seen_exts:
             ext_dir = directory / ext
             if not ext_dir.exists():
-                ext_dir.mkdir(exist_ok=True)
+                if not dry:
+                    ext_dir.mkdir(parents=True, exist_ok=True)
                 if verbose:
                     print(f"= 📁 Created directory: {ext_dir}")
             else:
                 if verbose:
-                    print(f"= ⏩ Skipping {ext_dir}, folder already exists")
+                    print(f"= ⏩ Skipping [{ext_dir}], folder already exists")
+            seen_exts.add(ext)
 
     # Copy/Move/Dry actions
     for file in files:
@@ -153,7 +156,7 @@ def sort_files(
         # Dry-run just prints what *would* happen
         if dry:
             processed += 1
-            print(f"=    📄 {"(Dry) copy" if copy else "(Dry) move"}: {file.name} → {ext}/")
+            print(f"= 📄 {"(Dry) copy" if copy else "(Dry) move"}: {file.name} → {ext}/")
         else:
             try:
                 processed += 1
@@ -174,13 +177,17 @@ def sort_files(
         ext_map.setdefault(ext, []).append(file.name)
 
     if recursive:
+        print("=== CLEANUP ===")
         remd_dirs = ""
         if force:
             remd_dirs = remove_empty_dirs(directory, dry=False)
         elif confirm("=❓ Remove Empty dirs?"):
             remd_dirs = remove_empty_dirs(directory, dry)
-        for dir in remd_dirs:
-            print(f"= 🗑️ Removed: {dir}")
+        if not remd_dirs:
+            print("= No empty dirs found")
+        else:
+            for dir in remd_dirs:
+                print(f"= 🗑️ Removed: {dir}")
 
     if not dry:
         print("=== SORTED DIRECTORY ===")
