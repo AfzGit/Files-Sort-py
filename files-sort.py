@@ -6,23 +6,38 @@ import shutil
 import argparse
 from pathlib import Path
 
- 
-
 # Get the extension of a file, e.g. "pdf", "exe", or "no_ext" if none.
 def get_extension(filename):
     return filename.suffix[1:].lower() if filename.suffix else "no_ext"
+    
+# Count and list unique file extensions in the given directory
+def count_unique_extensions(directory, recursive):
+    directory = Path(directory).expanduser().resolve()
+    if not directory.is_dir():
+        print(f"❌ Error: {directory} is not a valid directory.")
+        sys.exit(1)
 
+    # Use a set to gather unique extensions
+    if recursive:
+        extensions = {get_extension(f) for f in directory.rglob("*") if f.is_file()}
+    else:
+        extensions = {get_extension(f) for f in directory.iterdir() if f.is_file()}
+
+    return len(extensions), sorted(extensions)
 
 # Remove empty dirs
-def remove_empty_dirs(path):
+def remove_empty_dirs(path, dry):
     # 🛣️ Traverse directories from bottom up
+    log = ""
     for dirpath, dirnames, filenames in os.walk(path, topdown=False):
         # 📂 If no subdirs and no files, it’s empty
         if not dirnames and not filenames:
             # ❌ Remove the empty directory
-            os.rmdir(dirpath)
+            if not dry:
+                os.rmdir(dirpath)
+            log += [{dirpath}]
 
-    return f"Removed empty directory: {dirpath}"
+    return log
 
 # Prompt the user for yes/no confirmation (used in interactive mode)
 def confirm(prompt):
@@ -119,12 +134,15 @@ def sort_files(
 
     if recursive:
         if force:
-            remove_empty_dirs(directory)
+            remove_empty_dirs(directory, dry=False)
         elif confirm("❓ Remove Empty dirs?"):
             if not dry:
-                remove_empty_dirs(directory)
+                remove_empty_dirs(directory, dry=False)
             if verbose or dry:
+                remd_dirs = remove_empty_dirs(directory, dry=True)
                 print(f"Removed empty directories in: {directory}")
+                for dir in remd_dirs:
+                    print(f"🗑️ Removed: {dir}")
 
     final_summary(total, processed, skipped, directory)
 
@@ -137,23 +155,8 @@ def final_summary(total, processed, skipped, directory):
     print(f"   Files skipped:         {skipped}")
 
 
-# Count and list unique file extensions in the given directory
-def count_unique_extensions(directory, recursive):
-    directory = Path(directory).expanduser().resolve()
-    if not directory.is_dir():
-        print(f"❌ Error: {directory} is not a valid directory.")
-        sys.exit(1)
-
-    # Use a set to gather unique extensions
-    if recursive:
-        extensions = {get_extension(f) for f in directory.rglob("*") if f.is_file()}
-    else:
-        extensions = {get_extension(f) for f in directory.iterdir() if f.is_file()}
-
-    return len(extensions), sorted(extensions)
-
-# Argument parser and CLI logic
 def main():
+    # get args
     parser = argparse.ArgumentParser(
         description="Sort files into directories based on their extensions.",
         usage="files_sort.py [OPTIONS] DIRECTORY",
@@ -162,7 +165,7 @@ def main():
     # Directory to operate on (required)
     parser.add_argument("directory", help="Target directory to sort")
 
-    # Optional flags
+    # Flags
     parser.add_argument(
         "-c", "--copy", action="store_true", help="Copy files instead of moving"
     )
@@ -187,7 +190,6 @@ def main():
         action="store_true",
         help="Recursively sort sub-directories as well",
     )
-
     args = parser.parse_args()
 
     # Just list unique extensions and exit
