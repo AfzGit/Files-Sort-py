@@ -74,7 +74,7 @@ def sort_files(
     # 'Force' and 'Interactive' are not to be used together
     if force and interactive:
         print("Force and interactive are not compatible with each other. Exiting...")
-        return
+        sys.exit(1)
 
     # Gather only files in the given directory
     if not recursive:
@@ -85,6 +85,32 @@ def sort_files(
     # Gather files the entire directory recursively
     elif recursive:
         files = [f for f in directory.rglob("*") if f.is_file()]
+
+    # Sample before running
+    for file in files:
+        ext = get_extension(file)  # e.g., "pdf", "exe", "txt"
+        target_dir = directory / ext  # Create subfolder like folder/txt
+        target_path = target_dir / file.name # folder/file.txt
+        
+        # Create Dir
+        if not target_dir.exists():
+            print(f"📁 Created directory: {target_dir}")
+
+        # Move/Copy files
+        print(f"📄 {'Copy' if copy else 'Move'}: {file.name} → {ext}/")
+
+        if not force:
+            if not confirm("Proceed?"):
+                sys.exit(1)
+            
+    # Create directories
+    for file in files:
+        # ext folder
+        ext_dir = directory / get_extension(file)  
+
+        if not ext_dir.exists():
+            ext_dir.mkdir(exist_ok=True)
+            print(f"📁 Created directory: {ext_dir}")
 
     for file in files:
         total += 1
@@ -100,22 +126,13 @@ def sort_files(
                 skipped += 1
                 continue # no overwriting, skip this file
 
-        # Ask before copying/moving each file
-        # if interactive:
-        #     if not confirm(f"❓ {'Copy' if copy else 'Move'} {file.name} to {target_dir}?"):
-        #         skipped += 1
-        #         continue
-
         # Dry-run just prints what *would* happen
         if dry:
             processed += 1
-            print(f"📄 {"(Dry) copy" if copy else "(Dry) move"}: {file.name} → {ext}/")
+            print(f"    📄 {"(Dry) copy" if copy else "(Dry) move"}: {file.name} → {ext}/")
         else:
             try:
                 processed += 1
-                if not target_dir.exists():
-                    target_dir.mkdir(exist_ok=True)
-                    print(f"📁 Created directory: {target_dir}")
                 if copy:
                     shutil.copy2(file, target_path)  # Copy file (with metadata)
                     if verbose:
@@ -141,6 +158,9 @@ def sort_files(
         for dir in remd_dirs:
             print(f"🗑️ Removed: {dir}")
 
+    print("Sorted directory:")
+    for item in os.listdir(directory):
+        print(f"- {item}")
     final_summary(total, processed, skipped, directory)
 
     return ext_map
