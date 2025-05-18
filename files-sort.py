@@ -169,7 +169,7 @@ def sort_files(
                     if verbose:
                         print(f"= 🚚 Moved: {file.name} → {ext}/")
             except Exception as e:
-                print(f"❌ Error: {e}")
+                print(f"= ❌ Error: {e}")
                 skipped += 1
                 continue
 
@@ -178,23 +178,26 @@ def sort_files(
 
     if recursive:
         print("=== CLEANUP ===")
-        empty = True
         remd_dirs = remove_empty_dirs(directory, dry=True)
         if not remd_dirs:
             print("= No empty dirs found")
             empty = True
         else:
             for dir in remd_dirs:
-                print(f"Found empty dir: [{dir}]")
+                print(f"= ⚠️ Found empty dir: [{dir}]")
             empty = False
 
         if not empty:
             if force:
                 remove_empty_dirs(directory, dry=False)
-            elif confirm("=❓ Remove Empty dirs?"):
+            if confirm("=❓ Remove Empty dirs?"):
                 remove_empty_dirs(directory, dry)
-            for dir in remd_dirs:
-                print(f"= 🗑️ Removed: [{dir}]")
+                for dir in remd_dirs:
+                    print(f"= 🗑️ Removed: [{dir}]")
+            else:
+                for dir in remd_dirs:
+                    print(f"= ❌️ Did not remove: [{dir}]")
+
 
     if not dry:
         print("=== SORTED DIRECTORY ===")
