@@ -247,9 +247,10 @@ def main():
     # Just list unique extensions and exit
     if args.unique:
         ext_len, ext_dict = count_unique_extensions(args.directory, args.recursive)
-        print(f"🔢 Unique extensions: {ext_len}")
+        print(f"=== 🔢 Unique extensions: {ext_len} ===")
         for ext in ext_dict:
-            print(f" - {ext}")
+            print(f"= - {ext}")
+        print(f"=== END ===")
     else:
         # Run the file sorting function
         sort_files(
