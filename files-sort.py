@@ -188,19 +188,18 @@ def sort_files(
                 print(f"Found empty dir: [{dir}]")
             empty = False
 
-        if force and not empty:
-            remove_empty_dirs(directory, dry=False)
-        elif confirm("=❓ Remove Empty dirs?") and not empty:
-            remove_empty_dirs(directory, dry)
-
         if not empty:
+            if force:
+                remove_empty_dirs(directory, dry=False)
+            elif confirm("=❓ Remove Empty dirs?"):
+                remove_empty_dirs(directory, dry)
             for dir in remd_dirs:
                 print(f"= 🗑️ Removed: [{dir}]")
 
     if not dry:
         print("=== SORTED DIRECTORY ===")
         entries = os.listdir(directory)
-        # 🧠 Sort: folders first, then files; each group alphabetically
+        # Sort: folders first, then files; each group alphabetically
         entries.sort(key=lambda x: (not os.path.isdir(os.path.join(directory, x)), x.lower()))
         for item in entries:
             full_path = os.path.join(directory, item)
