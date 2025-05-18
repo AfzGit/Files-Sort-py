@@ -28,14 +28,14 @@ def count_unique_extensions(directory, recursive):
 # Remove empty dirs
 def remove_empty_dirs(path, dry):
     # 🛣️ Traverse directories from bottom up
-    log = ""
+    log = []
     for dirpath, dirnames, filenames in os.walk(path, topdown=False):
         # 📂 If no subdirs and no files, it’s empty
         if not dirnames and not filenames:
             # ❌ Remove the empty directory
             if not dry:
                 os.rmdir(dirpath)
-            log += [{dirpath}]
+            log.append(dirpath)
 
     return log
 
