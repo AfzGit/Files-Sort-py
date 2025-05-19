@@ -6,11 +6,13 @@ import shutil
 import argparse
 from pathlib import Path
 
-# Get the extension of a file, e.g. "pdf", "exe", or "no_ext" if none.
+# Get the extension of a file
+# Returns [extensions string] (pdf, exe, no_ext)
 def get_extension(filename):
     return filename.suffix[1:].lower() if filename.suffix else "no_ext"
     
 # Count and list unique file extensions in the given directory
+# Returns [number of unique extensions], [set of unique extensions]
 def count_unique_extensions(directory, recursive):
     directory = Path(directory).expanduser().resolve()
     if not directory.is_dir():
@@ -26,6 +28,7 @@ def count_unique_extensions(directory, recursive):
     return len(extensions), sorted(extensions)
 
 # Remove empty dirs
+# Returns [array of directories to delete]
 def remove_empty_dirs(path, dry):
     # 🛣️ Traverse directories from bottom up
     log = []
@@ -43,9 +46,10 @@ def remove_empty_dirs(path, dry):
 def confirm(prompt):
     try:
         return input(f"{prompt} [y/N]: ").strip().lower() == "y"
+    except KeyboardInterrupt:
+        return False
     except EOFError:
         return False
-
 
 # Main function that performs sorting based on extensions
 def sort_files(
@@ -55,7 +59,6 @@ def sort_files(
     verbose=False,
     dry=False,
     force=False,
-    interactive=False,
     recursive=False,
 ):
     directory = Path(directory).expanduser().resolve()
@@ -71,10 +74,6 @@ def sort_files(
         print(f"❌ Error: {directory} is not a valid directory.")
         return
 
-    # 'Force' and 'Interactive' are not to be used together
-    if force and interactive:
-        print("Force and interactive are not compatible with each other. Exiting...")
-        sys.exit(1)
 
     # Gather only files in the given directory
     if not recursive:
@@ -210,12 +209,12 @@ def sort_files(
 
     return ext_map
 
+# Prints the results of file counters
 def final_summary(total, processed, skipped, directory):
     print(f"= 📊 Sorted: {directory}")
     print(f"= 🗃️ Total files found:     {total}")
     print(f"= 🚚 Files moved/copied:    {processed}")
     print(f"= ⏩ Files skipped:         {skipped}")
-
 
 def main():
     # get args
@@ -233,9 +232,6 @@ def main():
     )
     parser.add_argument(
         "-v", "--verbose", action="store_true", help="Enable verbose output"
-    )
-    parser.add_argument(
-        "-i", "--interactive", action="store_true", help="Prompt before overwriting"
     )
     parser.add_argument(
         "-f", "--force", action="store_true", help="Prevent prompts and proceed with changes, overwrites already existing files without prompt"
@@ -270,10 +266,8 @@ def main():
             verbose=args.verbose,
             dry=args.dry,
             force=args.force,
-            interactive=args.interactive,
             recursive=args.recursive,
         ))
-
 
 # Entry point of the script
 if __name__ == "__main__":
