@@ -4,293 +4,403 @@ import os
 import sys
 import shutil
 import argparse
+import logging
+from abc import ABC, abstractmethod
 from pathlib import Path
+from datetime import datetime
+from typing import List, Dict, Optional
+from colorama import init, Fore, Style  # Import colorama
 
-# Get the extension of a file
-# Returns [extensions string] (pdf, exe, no_ext)
-def get_extension(filename):
-    return filename.suffix[1:].lower() if filename.suffix else "no_ext"
-    
-def sorted_files(ext_map):
-    for ext in sorted(ext_map):  # Sort extensions alphabetically
-        print(f"= 📂 {ext}/")
-        for fname in sorted(ext_map[ext], key=str.lower):  # Sort files alphabetically (case-insensitive)
-            print(f"=   📄 {fname}")
+# Initialize colorama for cross-platform support
+init(autoreset=True)
 
-# Count and list unique file extensions in the given directory
-# Returns [number of unique extensions], [set of unique extensions]
-def count_unique_extensions(directory, recursive):
-    directory = Path(directory).expanduser().resolve()
-    if not directory.is_dir():
-        print(f"❌ Error: {directory} is not a valid directory.")
+# Emoji constants
+EMOJI = {
+    'COPY': '📝',
+    'MOVE': '🚚',
+    'SKIP': '⏩',
+    'ERROR': '❌',
+    'CONFIRM': '❓',
+    'DONE': '✅',
+    'EMPTY': '🗑️',
+    'EXT': '📄',
+    'DIR': '📂'
+}
+
+# Configure logger with colored formatter
+logger = logging.getLogger("files-sort")
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+
+# Custom formatter to add colors
+class ColoredFormatter(logging.Formatter):
+    def format(self, record):
+        msg = record.msg
+        # Color headers (e.g., === DETAILS ===)
+        if msg.startswith("===") and msg.endswith("==="):
+            msg = f"{Fore.CYAN}{msg}{Style.RESET_ALL}"
+        # Color specific actions
+        elif "Created:" in msg:
+            msg = msg.replace("Created:", f"{Fore.GREEN}Created:{Style.RESET_ALL}")
+        elif "Skipping" in msg:
+            msg = msg.replace("Skipping", f"{Fore.BLUE}Skipping{Style.RESET_ALL}")
+        elif "Error:" in msg:
+            msg = msg.replace("Error:", f"{Fore.RED}Error:{Style.RESET_ALL}")
+        elif "Copied" in msg or "Moved" in msg:
+            msg = msg.replace("Copied", f"{Fore.GREEN}Copied{Style.RESET_ALL}")
+            msg = msg.replace("Moved", f"{Fore.GREEN}Moved{Style.RESET_ALL}")
+        return f"= {msg}"
+
+handler.setFormatter(ColoredFormatter())
+logger.addHandler(handler)
+
+class SortStrategy(ABC):
+    @abstractmethod
+    def get_key(self, file: Path) -> str:
+        pass
+
+    @abstractmethod
+    def get_category(self, file: Path) -> str:
+        pass
+
+    @abstractmethod
+    def get_category_name(self) -> str:
+        pass
+
+    @abstractmethod
+    def get_summary_title(self) -> str:
+        pass
+
+class SizeSortStrategy(SortStrategy):
+    SIZE_BUCKETS = [
+        (float('inf'), '01_20GB+'),
+        (20 * 1024**3, '02_10GB-20GB'),
+        (10 * 1024**3, '03_5GB-10GB'),
+        (5 * 1024**3, '04_1GB-5GB'),
+        (1024**3, '05_500MB-1GB'),
+        (500 * 1024**2, '06_100MB-500MB'),
+        (100 * 1024**2, '07_1MB-100MB'),
+        (1024**2, '08_500KB-1MB'),
+        (500 * 1024, '09_1KB-500KB'),
+        (1024, '10_0-1KB'),
+        (0, '11_empty')
+    ]
+
+    def get_key(self, file: Path) -> int:
+        return file.stat().st_size
+
+    def get_category(self, file: Path) -> str:
+        size = file.stat().st_size
+        for threshold, bucket in self.SIZE_BUCKETS:
+            if size >= threshold:
+                return bucket
+        return '11_empty'
+
+    def get_category_name(self) -> str:
+        return "File Size"
+
+    def get_summary_title(self) -> str:
+        return "SORTED FILES BY SIZE"
+
+class TimeSortStrategy(SortStrategy):
+    def __init__(self, use_created: bool = False):
+        self.time_func = os.path.getctime if use_created else os.path.getmtime
+
+    def get_key(self, file: Path) -> float:
+        return self.time_func(file)
+
+    def get_category(self, file: Path) -> str:
+        return datetime.fromtimestamp(self.time_func(file)).strftime("%Y-%m-%d")
+
+    def get_category_name(self) -> str:
+        return "Created Time" if self.time_func == os.path.getctime else "Modified Time"
+
+    def get_summary_title(self) -> str:
+        return "SORTED FILES BY DATE"
+
+class ExtensionSortStrategy(SortStrategy):
+    def get_extension(self, file: Path) -> str:
+        return file.suffix.lower().lstrip(".") or "no_ext"
+
+    def get_key(self, file: Path) -> str:
+        return self.get_extension(file)
+
+    def get_category(self, file: Path) -> str:
+        return self.get_extension(file)
+
+    def get_category_name(self) -> str:
+        return "File Extension"
+
+    def get_summary_title(self) -> str:
+        return "SORTED FILES BY EXTENSION"
+
+class FileSorter:
+    def __init__(self, directory: str, strategy: SortStrategy, config: Dict):
+        self.directory = validate_directory(directory)
+        self.strategy = strategy
+        self.config = config
+        self.category_map: Dict[str, List[str]] = {}
+        self.stats = {'total': 0, 'processed': 0, 'skipped': 0}
+        self.overwrite_all = False
+        self.skip_all = False
+
+    def collect_files(self) -> List[Path]:
+        all_files = self.directory.rglob("*") if self.config['recursive'] else self.directory.iterdir()
+        
+        # Identify excluded folders (created by sorter itself)
+        excluded_dirs = set()
+        if isinstance(self.strategy, SizeSortStrategy):
+            excluded_dirs = {str(self.directory / bucket[1]) for bucket in self.strategy.SIZE_BUCKETS}
+        elif isinstance(self.strategy, ExtensionSortStrategy):
+            excluded_dirs = {str(self.directory / ext) for ext in ['no_ext'] + [
+                f.suffix.lower().lstrip(".") for f in self.directory.iterdir() if f.is_file()
+            ]}
+        elif isinstance(self.strategy, TimeSortStrategy):
+            excluded_dirs = {str(self.directory / datetime.fromtimestamp(self.strategy.get_key(f)).strftime("%Y-%m-%d"))
+                            for f in self.directory.iterdir() if f.is_file()}
+
+        def is_not_in_excluded(file: Path) -> bool:
+            return not any(str(file).startswith(d + os.sep) for d in excluded_dirs)
+
+        return sorted([f for f in all_files if f.is_file() and is_not_in_excluded(f)], key=self.strategy.get_key)
+
+    def log_details(self, files: List[Path]):
+        logger.info("=== DETAILS ===")
+        logger.info(f"➡ {EMOJI['DIR']} Directory: [{self.directory}]")
+        logger.info(f"➡ 🎬 Action: {EMOJI['COPY'] + ' Copying' if self.config['copy'] else EMOJI['MOVE'] + ' Moving'}")
+        logger.info(f"➡ 📦 Sorted by: {self.strategy.get_category_name()}")
+
+        seen_categories = set()
+        logger.info("=== ACTIONS ===")
+        for file in files:
+            category = self.strategy.get_category(file)
+            category_dir = self.directory / category
+            if category not in seen_categories:
+                msg = f"{EMOJI['ERROR']} 📁 [{category_dir}] (Already exists)" if category_dir.exists() else f"{EMOJI['DONE']} 📁 [{category_dir}]"
+                logger.info(msg)
+                seen_categories.add(category)
+            try:
+                stat = file.stat()
+                size_info = f" ({human_readable_size(stat.st_size)})" if isinstance(self.strategy, SizeSortStrategy) else ""
+            except FileNotFoundError:
+                size_info = " (not found)"
+            logger.info(f"   ➡ {EMOJI['EXT']} {file.name}{size_info}")
+
+    def create_category_dirs(self, categories: set):
+        for category in categories:
+            category_dir = self.directory / category
+            if not category_dir.exists():
+                if not self.config['dry']:
+                    category_dir.mkdir(parents=True, exist_ok=True)
+                if self.config['verbose']:
+                    logger.info(f"📁 Created: {category_dir}")
+            elif self.config['verbose']:
+                logger.info(f"{EMOJI['SKIP']} Skipping [{EMOJI['DIR']} {category_dir}], folder already exists")
+
+    def process_file(self, file: Path, category: str) -> bool:
+        target_dir = self.directory / category
+        target_path = target_dir / file.name
+
+        if target_path.exists() and not (self.config['force'] or self.overwrite_all):
+            if not self.skip_all:
+                ans = confirm_overwrite_choice(f"{EMOJI['CONFIRM']} [{EMOJI['EXT']} {target_path}] exists. Overwrite?")
+            else:
+                ans = 's'
+            if ans == "a":
+                self.overwrite_all = True
+                logger.info("⚔️ Overwriting all files")
+            elif ans in {"n", "s"}:
+                if ans == "s" and not self.skip_all:
+                    logger.info(f"{EMOJI['SKIP']} Skipping all files with conflicts")
+                    self.skip_all = True
+                logger.info(f"{EMOJI['SKIP']} Skipped: {file.name}")
+                self.stats['skipped'] += 1
+                return False
+            elif ans != "y":
+                return False
+
+        if self.config['dry']:
+            logger.info(f"{EMOJI['COPY'] if self.config['copy'] else EMOJI['MOVE']} (Dry): [{EMOJI['EXT']} {file.name}] → [{EMOJI['DIR']} {category}/]")
+            self.stats['processed'] += 1
+            return True
+
+        try:
+            if self.config['copy']:
+                shutil.copy2(file, target_path)
+            else:
+                shutil.move(file, target_path)
+            if self.config['verbose']:
+                logger.info(f"{EMOJI['COPY'] + ' Copied ' if self.config['copy'] else EMOJI['MOVE'] + ' Moved'} [{EMOJI['EXT']} {file.name}] → [{EMOJI['DIR']} {category}/]")
+            self.stats['processed'] += 1
+            return True
+        except Exception as e:
+            logger.error(f"{EMOJI['ERROR']} Error: {e}")
+            self.stats['skipped'] += 1
+            return False
+
+    def sort(self) -> Dict[str, List[str]]:
+        files = self.collect_files()
+        if not files:
+            logger.info(f"{EMOJI['DIR']} No files to sort.")
+            return {}
+
+        self.log_details(files)
+        
+        if not self.config['force']:
+            logger.info("=== CONFIRMATION ===")
+            if not confirm(f"= {EMOJI['CONFIRM']} Proceed?"):
+                logger.info(f"🚧 Status: {EMOJI['ERROR']} Stopped")
+                logger.info("=== END ===")
+                sys.exit(1)
+            logger.info(f"🚧 Status: {EMOJI['DONE']} Proceed")
+            logger.info("=== WORKING ===")
+
+        categories = {self.strategy.get_category(file) for file in files}
+        self.create_category_dirs(categories)
+
+        for file in files:
+            self.stats['total'] += 1
+            category = self.strategy.get_category(file)
+            if self.process_file(file, category):
+                self.category_map.setdefault(category, []).append(file.name)
+
+        if self.config['recursive']:
+            self.cleanup_empty_dirs()
+
+        if not self.config['dry']:
+            self.log_summary()
+
+        logger.info("=== FINAL SUMMARY ===")
+        final_summary(self.stats['total'], self.stats['processed'], self.stats['skipped'], self.directory)
+        logger.info("=== END ===")
+        return self.category_map
+
+    def cleanup_empty_dirs(self):
+        logger.info("=== CLEANUP ===")
+        empty_dirs = remove_empty_dirs(self.directory, dry=True)
+        if empty_dirs:
+            for d in empty_dirs:
+                logger.info(f"⚠️ Found empty dir: [{d}]")
+            if self.config['force'] or confirm(f"= {EMOJI['CONFIRM']} Remove empty directories?"):
+                remove_empty_dirs(self.directory, dry=self.config['dry'])
+                if not self.config['dry']:
+                    for d in empty_dirs:
+                        logger.info(f"{EMOJI['EMPTY']} Removed: [{d}]")
+            else:
+                logger.info("❌️ Did not remove empty directories")
+        else:
+            logger.info("No empty dirs found")
+
+    def log_summary(self):
+        logger.info(f"=== {self.strategy.get_summary_title()} ===")
+        for category in sorted(self.category_map):
+            logger.info(f"{EMOJI['DIR']} {category}/")
+            for fname in sorted(self.category_map[category], key=str.lower):
+                logger.info(f"  {EMOJI['EXT']} {fname}")
+
+def validate_directory(path: str) -> Path:
+    path = Path(path).expanduser().resolve()
+    if not path.is_dir():
+        logger.error(f"{EMOJI['ERROR']} Error: {path} is not a valid directory.")
         sys.exit(1)
+    return path
 
-    # Use a set to gather unique extensions
-    if recursive:
-        extensions = {get_extension(f) for f in directory.rglob("*") if f.is_file()}
-    else:
-        extensions = {get_extension(f) for f in directory.iterdir() if f.is_file()}
+def human_readable_size(size_bytes: int) -> str:
+    units = ["B", "KB", "MB", "GB", "TB", "PB"]
+    for unit in units:
+        if size_bytes < 1024:
+            return f"{size_bytes:.1f} {unit}"
+        size_bytes /= 1024
+    return f"{size_bytes:.1f} PB"
 
+def count_unique_extensions(directory: str, recursive: bool) -> tuple[int, List[str]]:
+    directory = validate_directory(directory)
+    files = directory.rglob("*") if recursive else directory.iterdir()
+    extensions = {ExtensionSortStrategy().get_extension(f) for f in files if f.is_file()}
     return len(extensions), sorted(extensions)
 
-# Remove empty dirs
-# Returns [array of directories to delete]
-def remove_empty_dirs(path, dry):
-    # 🛣️ Traverse directories from bottom up
+def remove_empty_dirs(path: Path, dry: bool) -> List[Path]:
     log = []
     for dirpath, dirnames, filenames in os.walk(path, topdown=False):
-        # 📂 If no subdirs and no files, it’s empty
         if not dirnames and not filenames:
-            # ❌ Remove the empty directory
-            if not dry:
-                os.rmdir(dirpath)
-            log.append(dirpath)
-
+            try:
+                if not dry:
+                    os.rmdir(dirpath)
+                log.append(Path(dirpath))
+            except Exception as e:
+                logger.warning(f"{EMOJI['ERROR']} Could not remove {dirpath}: {e}")
     return log
 
-# Prompt the user for yes/no confirmation 
-def confirm(prompt):
+def final_summary(total: int, processed: int, skipped: int, directory: Path):
+    logger.info(f"{EMOJI['DIR']} Sorted: {directory}")
+    logger.info(f"➕ Total files found:     {total}")
+    logger.info(f"{EMOJI['MOVE']} Files moved/copied:    {processed}")
+    logger.info(f"{EMOJI['SKIP']} Files skipped:         {skipped}")
+
+def confirm(prompt: str) -> bool:
     try:
         return input(f"{prompt} [y/N]: ").strip().lower() == "y"
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         sys.exit(1)
-    except EOFError:
-        return False
 
-# for overwriting, accepts A as input
-def confirm_A(prompt):
+def confirm_overwrite_choice(prompt: str) -> str:
     try:
-        response = input(f"{prompt} \n= [y]es | [N]O | [a]ll: ").strip().lower()
-        if response in {"y", "a", "n"}:
-            return response
-        return "n"  # default to "n" on empty or invalid input
-    except KeyboardInterrupt:
+        response = input(f"=\n= {prompt}\n= [y]es | [N]O | [a]ll | [s]kip all: ").strip().lower()
+        return response if response in {"y", "a", "n", "s"} else "n"
+    except (KeyboardInterrupt, EOFError):
         sys.exit(1)
-    except EOFError:
-        return False
-
-# Main function that performs sorting based on extensions
-def sort_files(
-    directory,
-    *,
-    copy=False,
-    verbose=False,
-    dry=False,
-    force=False,
-    recursive=False,
-):
-    directory = Path(directory).expanduser().resolve()
-    ext_map = {}  # Dictionary to store extension -> list of filenames
-
-    # Counters
-    total = 0
-    skipped = 0
-    processed = 0
-
-    # Check if the directory exists
-    if not directory.is_dir():
-        print(f"❌ Error: {directory} is not a valid directory.")
-        return
-
-
-    # Gather only files in the given directory
-    if not recursive:
-        files = [f for f in directory.iterdir() if f.is_file()]
-    # Gather files the entire directory recursively
-    elif recursive:
-        files = [f for f in directory.rglob("*") if f.is_file()]
-    if not files:
-        print("📂 No files to sort.")
-        return
-
-    # sort files by ext (file.a, file.b, ..., file.z)
-    files = sorted(files, key=lambda x: x.suffix.lstrip('.').lower())
-
-    # Sample output before running
-    print("=== DETAILS ===")
-    print(f"= ➡ 📂 Directory: [{directory}]")
-    print(f"= ➡ 🎬 Action: {'📝 Copying' if copy else '🚚 Moving'}")
-
-    # Create Dir if it doesn't exists, else skip
-    # Sample copy and move files 
-    print("=== ACTIONS ===")
-    seen_exts = set()
-    for file in files:
-        ext = get_extension(file)
-        ext_dir = directory / ext
-
-        if ext not in seen_exts:
-            if ext_dir.exists():
-                print(f"= ❌ 📁 [{ext_dir}] (Already exists)")
-            else:
-                print(f"= ✅ 📁 [{ext_dir}]")
-            seen_exts.add(ext)
-
-        print(f"=    ➡ 📄 {file.name}")
-
-    print("=== CONFIRMATION ===")
-    if not force:
-        if not confirm("= ❓ Proceed?"):
-            print("= 🚧 Status: ❌ Stopped")
-            print("=== End ===")
-            sys.exit(1)
-        else:
-            print("= 🚧 Status: ✅ Proceed")
-            print("=== WORKING ===")
-
-    # Create directories (skip existing)
-    for ext in seen_exts:
-        ext_dir = directory / ext
-        if not ext_dir.exists():
-            if not dry:
-                ext_dir.mkdir(parents=True, exist_ok=True)
-            if verbose:
-                print(f"= 📁 Created directory: {ext_dir}")
-        else:
-            if verbose:
-                print(f"= ⏩ Skipping as already exists: [{ext_dir}]")
-
-    # Copy/Move/Dry actions
-    overwrite = False
-    for file in files:
-        total += 1
-        ext = get_extension(file)  # "pdf", "exe", "txt"
-        target_dir = directory / ext  # Create subfolder like folder/txt
-        target_path = target_dir / file.name # folder/file.txt
-
-        # Skip if already in correct target location
-        if file.resolve() == target_path.resolve():
-            if verbose:
-                print(f"= 🔁 Skipping as already sorted: {file.name}")
-            skipped += 1
-            continue
-
-        # Handle file already existing at target location (if force, then overwrite anyways)
-        if target_path.exists() and not force and not overwrite:
-            print("=")
-            ans = confirm_A(f"= ❓ {target_path} exists. Overwrite?")
-            if ans == 'a':
-                overwrite = True # Overwrite all files
-                print("= ⚔️ Overwritting all files")
-            elif ans == 'n' and not overwrite:
-                print(f"= ⏩ Skipped: {file.name}")
-                skipped += 1
-                continue # No overwriting, skip this file
-
-        # Dry-run just prints what *would* happen
-        if dry:
-            processed += 1
-            print(f"= 📄 {"(Dry) copy" if copy else "(Dry) move"}: {file.name} → {ext}/")
-        else:
-            try:
-                processed += 1
-                if copy:
-                    shutil.copy2(file, target_path)  # Copy file (with metadata)
-                    if verbose:
-                        print(f"= 📝 Copied: {file.name} → {ext}/")
-                else:
-                    shutil.move(file, target_path)  # Move file
-                    if verbose:
-                        print(f"= 🚚 Moved: {file.name} → {ext}/")
-            except Exception as e:
-                print(f"= ❌ Error: {e}")
-                skipped += 1
-                continue
-
-        # Track sorted files for summary/logging
-        ext_map.setdefault(ext, []).append(file.name)
-
-    if recursive:
-        print("=== CLEANUP ===")
-        remd_dirs = remove_empty_dirs(directory, dry=True)
-        if not remd_dirs:
-            print("= No empty dirs found")
-            empty = True
-        else:
-            for dir in remd_dirs:
-                print(f"= ⚠ Found empty dir: [{dir}]")
-            empty = False
-
-        if not empty:
-            if force:
-                remove_empty_dirs(directory, dry=False)
-            elif confirm("=❓ Remove Empty dirs?"):
-                remove_empty_dirs(directory, dry)
-                for dir in remd_dirs:
-                    print(f"= 🗑 Removed: [{dir}]")
-            else:
-                print(f"= ❌️ Did not remove empty directories")
-
-    if processed != 0:
-        print("=== SORTED FILES ===")
-        sorted_files(ext_map)
-
-    print("=== FINAL SUMMARY ===")
-    final_summary(total, processed, skipped, directory)
-    print("=== END ===")
-
-    return ext_map
-
-# Prints the results of file counters
-def final_summary(total, processed, skipped, directory):
-    print(f"= 📊 Sorted: {directory}")
-    print(f"= ➕ Total files found:     {total}")
-    print(f"= 🚚 Files moved/copied:    {processed}")
-    print(f"= ⏩ Files skipped:         {skipped}")
 
 def main():
-    # get args
     parser = argparse.ArgumentParser(
-        description="Sort files into directories based on their extensions.",
-        usage="files_sort.py [OPTIONS] DIRECTORY",
+        description="Sort files into directories based on specified criteria.",
+        usage="files-sort.py [OPTIONS] DIRECTORY",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-
-    # Directory to operate on (required)
     parser.add_argument("directory", help="Target directory to sort")
+    parser.add_argument("-c", "--copy", action="store_true", help="Copy files instead of moving")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
+    parser.add_argument("-f", "--force", action="store_true", help="Run without prompts, overwrite all existing files")
+    parser.add_argument("-d", "--dry", action="store_true", help="Dry run (simulate actions)")
+    parser.add_argument("-u", "--unique", action="store_true", help="Show unique extensions and exit")
+    parser.add_argument("-r", "--recursive", action="store_true", help="Recursively sort sub-directories")
+    parser.add_argument(
+        "-s",
+        "--sort",
+        choices=["extension", "size", "mtime", "ctime"],
+        default="extension",
+        help="Sort criterion: extension, size, mtime (modified time), ctime (created time)",
+    )
 
-    # Flags
-    parser.add_argument(
-        "-c", "--copy", action="store_true", help="Copy files instead of moving"
-    )
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Enable verbose output"
-    )
-    parser.add_argument(
-        "-f", "--force", action="store_true", help="Prevent prompts and proceed with changes, overwrites already existing files without prompt"
-    )
-    parser.add_argument(
-        "-d", "--dry", action="store_true", help="Dry run (simulate actions)"
-    )
-    parser.add_argument(
-        "-u", "--unique", action="store_true", help="Show unique extensions and exit"
-    )
-    parser.add_argument(
-        "-r",
-        "--recursive",
-        action="store_true",
-        help="Recursively sort sub-directories as well",
-    )
     args = parser.parse_args()
 
-    # Just list unique extensions and exit
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+
     if args.unique:
-        ext_len, ext_dict = count_unique_extensions(args.directory, args.recursive)
-        print(f"=== 🔢 Unique extensions: {ext_len} ===")
-        for i, ext in enumerate(ext_dict, start=1):
-            print(f"{i})📄 {ext}")
+        count, exts = count_unique_extensions(args.directory, args.recursive)
+        logger.info(f"=== 🔢 Unique extensions: {count} ===")
+        for i, ext in enumerate(exts, start=1):
+            logger.info(f"{i}) {EMOJI['EXT']} {ext}")
+        logger.info("=== END ===")
+        return
 
-        print(f"=== END ===")
-    else:
-        # Run the file sorting function
-        sort_files(
-            args.directory,
-            copy=args.copy,
-            verbose=args.verbose,
-            dry=args.dry,
-            force=args.force,
-            recursive=args.recursive,
-        )
+    strategy_map = {
+        "extension": ExtensionSortStrategy(),
+        "size": SizeSortStrategy(),
+        "mtime": TimeSortStrategy(use_created=False),
+        "ctime": TimeSortStrategy(use_created=True),
+    }
+    
+    config = {
+        'copy': args.copy,
+        'verbose': args.verbose,
+        'dry': args.dry,
+        'force': args.force,
+        'recursive': args.recursive
+    }
 
-# Entry point of the script
+    sorter = FileSorter(args.directory, strategy_map[args.sort], config)
+    sorter.sort()
+
 if __name__ == "__main__":
     main()
