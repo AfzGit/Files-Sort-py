@@ -1,6 +1,6 @@
 # 🗂️ files-sort.py
 
-A Python utility to **organize files into subfolders based on their extensions**. Supports moving or copying files, interactive prompts, dry-run mode, and recursive sorting.
+A Python utility to **organize files into subfolders based on their extensions**. Supports moving or copying files, dry-run mode, and recursive sorting.
 
 ---
 
@@ -8,7 +8,6 @@ A Python utility to **organize files into subfolders based on their extensions**
 
 -   📦 Sorts files into folders like `pdf/`, `txt/`, `no_ext/`, etc.
 -   🔄 Move or copy files
--   ❓ Interactive mode for per-file confirmation
 -   ⚠️ Force mode to overwrite without prompts
 -   🧪 Dry-run to simulate actions
 -   🔁 Recursive sorting into subfolders
@@ -26,15 +25,14 @@ A Python utility to **organize files into subfolders based on their extensions**
 
 ## 🧩 Options
 
-| Flag                  | Description                                                                       |
-| --------------------- | --------------------------------------------------------------------------------- |
-| `-c`, `--copy`        | Copy files instead of moving them                                                 |
-| `-v`, `--verbose`     | Enable verbose output (show moved/copied files)                                   |
-| `-i`, `--interactive` | Prompt before overwriting                                                         |
-| `-f`, `--force`       | Overwrite existing files and suppress prompts (incompatible with `--interactive`) |
-| `-d`, `--dry`         | Perform a dry run (simulate actions without changes)                              |
-| `-u`, `--unique`      | List all unique file extensions in the directory and exit                         |
-| `-r`, `--recursive`   | Recursively sort files in all subdirectories                                      |
+| Flag                | Description                                               |
+| ------------------- | --------------------------------------------------------- |
+| `-c`, `--copy`      | Copy files instead of moving them                         |
+| `-v`, `--verbose`   | Enable verbose output (show moved/copied files)           |
+| `-f`, `--force`     | Overwrite existing files and suppress prompts             |
+| `-d`, `--dry`       | Perform a dry run (simulate actions without changes)      |
+| `-u`, `--unique`    | List all unique file extensions in the directory and exit |
+| `-r`, `--recursive` | Recursively sort files in all subdirectories              |
 
 ---
 
@@ -52,10 +50,10 @@ A Python utility to **organize files into subfolders based on their extensions**
     ./files-sort.py -cv ~/Documents
     ```
 
--   ❓ Interactive dry-run:
+-   ❓ dry-run:
 
     ```bash
-    ./files-sort.py -id ~/Desktop
+    ./files-sort.py -d ~/Desktop
     ```
 
 -   🔁 Recursively sort and remove empty folders:
@@ -92,6 +90,5 @@ No third-party dependencies required.
 
 ## ⚠️ Notes
 
--   `--force` and `--interactive` cannot be used together.
 -   The `no_ext` folder is used for files without extensions.
 -   Recursive mode may clean up empty folders if `--force` is used or upon confirmation.
