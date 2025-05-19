@@ -87,13 +87,11 @@ def sort_files(
 
     # sort files by ext (file.a, file.b, ..., file.z)
     files = sorted(files, key=lambda x: x.suffix.lstrip('.').lower())
-    for f in files:
-        print(f)
 
     # Sample output before running
     print("=== DETAILS ===")
-    print(f"= ➡ 📂 Directory:  [{directory}]")
-    print(f"= ➡ 🎬 Action: {'Copying 📝' if copy else 'Moving 🚚'}")
+    print(f"= ➡ 📂 Directory: [{directory}]")
+    print(f"= ➡ 🎬 Action: {'📝 Copying' if copy else '🚚 Moving'}")
 
     # Create Dir if it doesn't exists, else skip
     # Sample copy and move files 
