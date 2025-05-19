@@ -45,15 +45,21 @@ def remove_empty_dirs(path, dry):
 # Prompt the user for yes/no confirmation 
 def confirm(prompt):
     try:
-        prompt = input(f"{prompt} [y/N/a]: ").strip().lower() 
-        if prompt is "y":
-            return "y"
-        if prompt is "a":
-            return "a"
-        if prompt is "n":
-            return "n"
+        return input(f"{prompt} [y/N]: ").strip().lower() == "y"
     except KeyboardInterrupt:
+        sys.exit(1)
+    except EOFError:
         return False
+
+# for overwriting, accepts A as input
+def confirm_A(prompt):
+    try:
+        response = input(f"{prompt} \n= [y]es | [N]O | [a]ll: ").strip().lower()
+        if response in {"y", "a", "n"}:
+            return response
+        return "n"  # default to "n" on empty or invalid input
+    except KeyboardInterrupt:
+        sys.exit(1)
     except EOFError:
         return False
 
@@ -139,6 +145,7 @@ def sort_files(
                 print(f"= ⏩ Skipping [{ext_dir}], folder already exists")
 
     # Copy/Move/Dry actions
+    overwrite = False
     for file in files:
         total += 1
         ext = get_extension(file)  # "pdf", "exe", "txt"
@@ -146,12 +153,16 @@ def sort_files(
         target_path = target_dir / file.name # folder/file.txt
 
         # Handle file already existing at target location (if force, then overwrite anyways)
-        if target_path.exists() and not force:
-            # Ask for overwrite
-            if not confirm(f"= ❓ {target_path} exists. Overwrite?"):
-                print(f"=    ⏩ Skipped: {file.name}")
+        if target_path.exists() and not force and not overwrite:
+            print("=")
+            ans = confirm_A(f"= ❓ {target_path} exists. Overwrite?")
+            if ans == 'a':
+                overwrite = True # Overwrite all files
+                print("= ⚔️ Overwritting all files")
+            elif ans == 'n' and not overwrite:
+                print(f"= ⏩ Skipped: {file.name}")
                 skipped += 1
-                continue # no overwriting, skip this file
+                continue # No overwriting, skip this file
 
         # Dry-run just prints what *would* happen
         if dry:
@@ -198,7 +209,7 @@ def sort_files(
                 print(f"= ❌️ Did not remove empty directories")
 
     if not dry:
-        print("=== SORTED FILES BY EXTENSION ===")
+        print("n=== SORTED FILES BY EXTENSION ===")
         for ext in sorted(ext_map):  # Sort extensions alphabetically
             print(f"= 📂 {ext}/")
             for fname in sorted(ext_map[ext], key=str.lower):  # Sort files alphabetically (case-insensitive)
