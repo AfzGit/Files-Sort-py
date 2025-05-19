@@ -11,6 +11,12 @@ from pathlib import Path
 def get_extension(filename):
     return filename.suffix[1:].lower() if filename.suffix else "no_ext"
     
+def sorted_files(ext_map):
+    for ext in sorted(ext_map):  # Sort extensions alphabetically
+        print(f"= 📂 {ext}/")
+        for fname in sorted(ext_map[ext], key=str.lower):  # Sort files alphabetically (case-insensitive)
+            print(f"=   📄 {fname}")
+
 # Count and list unique file extensions in the given directory
 # Returns [number of unique extensions], [set of unique extensions]
 def count_unique_extensions(directory, recursive):
@@ -142,7 +148,7 @@ def sort_files(
                 print(f"= 📁 Created directory: {ext_dir}")
         else:
             if verbose:
-                print(f"= ⏩ Skipping [{ext_dir}], folder already exists")
+                print(f"= ⏩ Skipping as already exists: [{ext_dir}]")
 
     # Copy/Move/Dry actions
     overwrite = False
@@ -151,6 +157,13 @@ def sort_files(
         ext = get_extension(file)  # "pdf", "exe", "txt"
         target_dir = directory / ext  # Create subfolder like folder/txt
         target_path = target_dir / file.name # folder/file.txt
+
+        # Skip if already in correct target location
+        if file.resolve() == target_path.resolve():
+            if verbose:
+                print(f"= 🔁 Skipping as already sorted: {file.name}")
+            skipped += 1
+            continue
 
         # Handle file already existing at target location (if force, then overwrite anyways)
         if target_path.exists() and not force and not overwrite:
@@ -195,7 +208,7 @@ def sort_files(
             empty = True
         else:
             for dir in remd_dirs:
-                print(f"= ⚠️ Found empty dir: [{dir}]")
+                print(f"= ⚠ Found empty dir: [{dir}]")
             empty = False
 
         if not empty:
@@ -204,16 +217,13 @@ def sort_files(
             elif confirm("=❓ Remove Empty dirs?"):
                 remove_empty_dirs(directory, dry)
                 for dir in remd_dirs:
-                    print(f"= 🗑️ Removed: [{dir}]")
+                    print(f"= 🗑 Removed: [{dir}]")
             else:
                 print(f"= ❌️ Did not remove empty directories")
 
-    if not dry:
-        print("n=== SORTED FILES BY EXTENSION ===")
-        for ext in sorted(ext_map):  # Sort extensions alphabetically
-            print(f"= 📂 {ext}/")
-            for fname in sorted(ext_map[ext], key=str.lower):  # Sort files alphabetically (case-insensitive)
-                print(f"=   📄 {fname}")
+    if processed != 0:
+        print("=== SORTED FILES ===")
+        sorted_files(ext_map)
 
     print("=== FINAL SUMMARY ===")
     final_summary(total, processed, skipped, directory)
@@ -224,7 +234,7 @@ def sort_files(
 # Prints the results of file counters
 def final_summary(total, processed, skipped, directory):
     print(f"= 📊 Sorted: {directory}")
-    print(f"= 🗃️ Total files found:     {total}")
+    print(f"= ➕ Total files found:     {total}")
     print(f"= 🚚 Files moved/copied:    {processed}")
     print(f"= ⏩ Files skipped:         {skipped}")
 
