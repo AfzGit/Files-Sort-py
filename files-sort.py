@@ -39,7 +39,7 @@ def remove_empty_dirs(path, dry):
 
     return log
 
-# Prompt the user for yes/no confirmation (used in interactive mode)
+# Prompt the user for yes/no confirmation 
 def confirm(prompt):
     try:
         return input(f"{prompt} [y/N]: ").strip().lower() == "y"
@@ -148,7 +148,7 @@ def sort_files(
         # Handle file already existing at target location (if force, then overwrite anyways)
         if target_path.exists() and not force:
             # Ask for overwrite
-            if interactive and not confirm(f"❓ {target_path} exists. Overwrite?"):
+            if not confirm(f"❓ {target_path} exists. Overwrite?"):
                 print(f"=    ⏩ Skipped: {file.name}")
                 skipped += 1
                 continue # no overwriting, skip this file
@@ -197,18 +197,12 @@ def sort_files(
             else:
                 print(f"= ❌️ Did not remove empty directories")
 
-
     if not dry:
-        print("=== SORTED DIRECTORY ===")
-        entries = os.listdir(directory)
-        # Sort: folders first, then files; each group alphabetically
-        entries.sort(key=lambda x: (not os.path.isdir(os.path.join(directory, x)), x.lower()))
-        for item in entries:
-            full_path = os.path.join(directory, item)
-            if os.path.isdir(full_path):
-                print(f"= 📂 {item}")
-            else:
-                print(f"= 📄 {item}")
+        print("\n=== SORTED FILES BY EXTENSION ===")
+        for ext in sorted(ext_map):  # Sort extensions alphabetically
+            print(f"= 📂 {ext}/")
+            for fname in sorted(ext_map[ext], key=str.lower):  # Sort files alphabetically (case-insensitive)
+                print(f"=   📄 {fname}")
 
     print("=== FINAL SUMMARY ===")
     final_summary(total, processed, skipped, directory)
@@ -270,7 +264,7 @@ def main():
         print(f"=== END ===")
     else:
         # Run the file sorting function
-        sort_files(
+        print(sort_files(
             args.directory,
             copy=args.copy,
             verbose=args.verbose,
@@ -278,7 +272,7 @@ def main():
             force=args.force,
             interactive=args.interactive,
             recursive=args.recursive,
-        )
+        ))
 
 
 # Entry point of the script
