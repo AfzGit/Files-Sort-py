@@ -45,7 +45,13 @@ def remove_empty_dirs(path, dry):
 # Prompt the user for yes/no confirmation 
 def confirm(prompt):
     try:
-        return input(f"{prompt} [y/N]: ").strip().lower() == "y"
+        prompt = input(f"{prompt} [y/N/a]: ").strip().lower() 
+        if prompt is "y":
+            return "y"
+        if prompt is "a":
+            return "a"
+        if prompt is "n":
+            return "n"
     except KeyboardInterrupt:
         return False
     except EOFError:
@@ -98,18 +104,19 @@ def sort_files(
     print("=== ACTIONS ===")
     seen_exts = set()
     for file in files:
-        ext = get_extension(file)  # e.g., "pdf", "exe", "txt"
+        ext = get_extension(file)
         ext_dir = directory / ext
-        if ext_dir.exists():
-            print(f"= ❌ 📁 [{ext_dir}] (Already exists)")
-            seen_exts.add(ext)
+
         if ext not in seen_exts:
-            print(f"= ✅ 📁 [{ext_dir}]")
+            if ext_dir.exists():
+                print(f"= ❌ 📁 [{ext_dir}] (Already exists)")
+            else:
+                print(f"= ✅ 📁 [{ext_dir}]")
             seen_exts.add(ext)
-        # print(f"    📄 {'Copy' if copy else 'Move'}: {file.name} → {ext}/")
+
         print(f"=    ➡ 📄 {file.name}")
+
     print("=== CONFIRMATION ===")
-    # Confirm before running unless -f
     if not force:
         if not confirm("= ❓ Proceed?"):
             print("= 🚧 Status: ❌ Stopped")
@@ -118,22 +125,18 @@ def sort_files(
         else:
             print("= 🚧 Status: ✅ Proceed")
             print("=== WORKING ===")
-            
-    # Create directories
-    seen_exts = set()  # Make sure this is defined before the loop
-    for file in files:
-        ext = get_extension(file)
-        if ext not in seen_exts:
-            ext_dir = directory / ext
-            if not ext_dir.exists():
-                if not dry:
-                    ext_dir.mkdir(parents=True, exist_ok=True)
-                if verbose:
-                    print(f"= 📁 Created directory: {ext_dir}")
-            else:
-                if verbose:
-                    print(f"= ⏩ Skipping [{ext_dir}], folder already exists")
-            seen_exts.add(ext)
+
+    # Create directories (skip existing)
+    for ext in seen_exts:
+        ext_dir = directory / ext
+        if not ext_dir.exists():
+            if not dry:
+                ext_dir.mkdir(parents=True, exist_ok=True)
+            if verbose:
+                print(f"= 📁 Created directory: {ext_dir}")
+        else:
+            if verbose:
+                print(f"= ⏩ Skipping [{ext_dir}], folder already exists")
 
     # Copy/Move/Dry actions
     for file in files:
@@ -145,7 +148,7 @@ def sort_files(
         # Handle file already existing at target location (if force, then overwrite anyways)
         if target_path.exists() and not force:
             # Ask for overwrite
-            if not confirm(f"❓ {target_path} exists. Overwrite?"):
+            if not confirm(f"= ❓ {target_path} exists. Overwrite?"):
                 print(f"=    ⏩ Skipped: {file.name}")
                 skipped += 1
                 continue # no overwriting, skip this file
@@ -195,7 +198,7 @@ def sort_files(
                 print(f"= ❌️ Did not remove empty directories")
 
     if not dry:
-        print("\n=== SORTED FILES BY EXTENSION ===")
+        print("=== SORTED FILES BY EXTENSION ===")
         for ext in sorted(ext_map):  # Sort extensions alphabetically
             print(f"= 📂 {ext}/")
             for fname in sorted(ext_map[ext], key=str.lower):  # Sort files alphabetically (case-insensitive)
@@ -258,14 +261,14 @@ def main():
         print(f"=== END ===")
     else:
         # Run the file sorting function
-        print(sort_files(
+        sort_files(
             args.directory,
             copy=args.copy,
             verbose=args.verbose,
             dry=args.dry,
             force=args.force,
             recursive=args.recursive,
-        ))
+        )
 
 # Entry point of the script
 if __name__ == "__main__":
