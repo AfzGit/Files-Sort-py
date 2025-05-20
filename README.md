@@ -51,7 +51,7 @@ Clone the repo and make it executable:
 
 ```bash
 git clone https://github.com/AfzGit/Files-Sort-py.git
-cd files-sort
+cd Files-Sort-py/src/files_sort/
 chmod +x files-sort.py
 python files-sort.py -h
 ```
