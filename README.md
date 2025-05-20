@@ -1,94 +1,134 @@
-# 🗂️ files-sort.py
+# 🗂️ files-sort
 
-A Python utility to **organize files into subfolders based on their extensions**. Supports moving or copying files, dry-run mode, and recursive sorting.
+A powerful command-line tool to **sort files** in a directory based on criteria like file **extension**, **size**, or **timestamps**. Supports copying, moving, dry runs, verbose output, and automatic cleanup of empty directories.
 
 ---
 
 ## 🚀 Features
 
--   📦 Sorts files into folders like `pdf/`, `txt/`, `no_ext/`, etc.
--   🔄 Move or copy files
--   ⚠️ Force mode to overwrite without prompts
--   🧪 Dry-run to simulate actions
--   🔁 Recursive sorting into subfolders
--   📊 List unique file extensions in a directory
+-   📄 **Sort by Extension**: Groups files by file type (e.g., `.jpg`, `.pdf`).
+-   📦 **Sort by Size**: Categorizes files into size buckets (e.g., 0–1KB, 1–100MB, etc.).
+-   🕒 **Sort by Time**: Uses modified time (`mtime`) or created time (`ctime`) to group files by date.
+-   🚚 **Move or Copy**: Choose whether to move or copy files.
+-   🔍 **Dry Run Support**: Simulate the process before applying any changes.
+-   💬 **Interactive Prompts**: Ask before overwriting or skipping conflicting files.
+-   📁 **Recursive Support**: Process subdirectories.
+-   🎨 **Colorful Logs with Emojis**: Makes output visually intuitive and easy to follow.
 
 ---
 
-## 📌 Usage
+## 📦 Installation
+
+Clone the repo and make it executable:
 
 ```bash
-./files-sort.py [OPTIONS] DIRECTORY
+git clone https://github.com/yourusername/files-sort.git
+cd files-sort
+chmod +x files-sort.py
+```
+
+Or install via pip (if packaged as a CLI tool):
+
+```bash
+pip install files-sort
 ```
 
 ---
 
-## 🧩 Options
+## 🧩 Usage
 
-| Flag                | Description                                               |
-| ------------------- | --------------------------------------------------------- |
-| `-c`, `--copy`      | Copy files instead of moving them                         |
-| `-v`, `--verbose`   | Enable verbose output (show moved/copied files)           |
-| `-f`, `--force`     | Overwrite existing files and suppress prompts             |
-| `-d`, `--dry`       | Perform a dry run (simulate actions without changes)      |
-| `-u`, `--unique`    | List all unique file extensions in the directory and exit |
-| `-r`, `--recursive` | Recursively sort files in all subdirectories              |
+```bash
+files-sort [OPTIONS] DIRECTORY
+```
 
----
+### 🔧 Options
 
-## 🧪 Examples
-
--   👉 Move files by extension:
-
-    ```bash
-    ./files-sort.py ~/Downloads
-    ```
-
--   🧾 Copy files with verbose output:
-
-    ```bash
-    ./files-sort.py -cv ~/Documents
-    ```
-
--   ❓ dry-run:
-
-    ```bash
-    ./files-sort.py -d ~/Desktop
-    ```
-
--   🔁 Recursively sort and remove empty folders:
-
-    ```bash
-    ./files-sort.py -r -f ~/Projects
-    ```
-
--   📊 Just list extensions:
-
-    ```bash
-    ./files-sort.py -u ~/Downloads
-    ```
+| Option              | Description                                                             |
+| ------------------- | ----------------------------------------------------------------------- |
+| `-s`, `--sort`      | Sort by `extension`, `size`, `mtime`, or `ctime`. Default: `extension`. |
+| `-c`, `--copy`      | Copy files instead of moving them.                                      |
+| `-v`, `--verbose`   | Show detailed logs during processing.                                   |
+| `-d`, `--dry`       | Simulate the sorting without actually moving/copying files.             |
+| `-f`, `--force`     | Skip confirmation prompts and overwrite existing files.                 |
+| `-r`, `--recursive` | Include subdirectories recursively.                                     |
+| `-u`, `--unique`    | List unique file extensions in the directory and exit.                  |
 
 ---
 
-## 🛠️ Requirements
+## 📂 Examples
 
--   Python 3.6+
+### 🔤 Sort files by extension
 
-No third-party dependencies required.
+```bash
+files-sort ~/Downloads
+```
+
+### 📏 Sort by size (dry run + verbose)
+
+```bash
+files-sort -s size -d -v ~/Documents
+```
+
+### 🕓 Sort by modified time (recursively)
+
+```bash
+files-sort -s mtime -r ~/Pictures
+```
+
+### 📝 Copy instead of move, force overwrite
+
+```bash
+files-sort -s extension -c -f ~/Videos
+```
+
+### 🔍 See unique file extensions
+
+```bash
+files-sort -u ~/Downloads
+```
 
 ---
 
-## 📂 How it Works
+## 🧼 Auto Cleanup
 
-1. Scans the target directory (optionally recursively).
-2. Groups files by extension.
-3. Creates subfolders (e.g., `txt/`, `jpg/`, `no_ext/`).
-4. Moves or copies files into corresponding folders.
-5. Optionally removes empty directories (in recursive + force mode).
+If `--recursive` is used, the tool will also:
+
+-   Detect and optionally remove empty directories after sorting.
 
 ---
 
-## ⚠️ Notes
+## 📊 Output Summary
 
--   The `no_ext` folder is used for files without extensions.
--   Recursive mode may clean up empty folders if `--force` is used or upon confirmation.
+At the end of execution, you'll see:
+
+-   Total files found
+-   Number of files moved or copied
+-   Number of files skipped
+-   Final categorization by folder
+
+---
+
+## ✅ Requirements
+
+-   Python 3.7+
+-   [`colorama`](https://pypi.org/project/colorama/)
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## 🛠️ Dev Notes
+
+-   The code uses a **strategy pattern** for sorting.
+-   ANSI-colored logs with emoji indicators make output clean and user-friendly.
+-   Modular design for future expansion.
+
+---
+
+## 📄 License
+
+MIT © AfzGit
