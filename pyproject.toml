@@ -1,5 +1,5 @@
 [project]
-name = "files-sort-afz"
+name = "files-sort"
 version = "1.0.0"
 authors = [
   { name="AfzGit", email="sa15@duck.com" },
@@ -19,7 +19,7 @@ Homepage = "https://github.com/AfzGit/Files-Sort-py"
 Issues = "https://github.com/AfzGit/Files-Sort-py/issues"
 
 [project.scripts]
-files-sort = "files_sort_afz.main:main"
+files-sort = "files_sort.main:main"
 
 [build-system]
 requires = [
