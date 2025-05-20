@@ -13,11 +13,33 @@ A powerful command-line tool to **sort files** in a directory based on criteria 
 -   🔍 **Dry Run Support**: Simulate the process before applying any changes.
 -   💬 **Interactive Prompts**: Ask before overwriting or skipping conflicting files.
 -   📁 **Recursive Support**: Process subdirectories.
--   🎨 **Colorful Logs with Emojis**: Makes output visually intuitive and easy to follow.
+
+---
+
+## ✅ Requirements
+
+-   Python 3.7+
+-   [`colorama`](https://pypi.org/project/colorama/)
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
 
 ---
 
 ## 📦 Installation
+
+## Option 1: Pip
+
+install via pip (if packaged as a CLI tool):
+
+```bash
+pip install files-sort
+```
+
+## Option 2: Clone the repo
 
 Clone the repo and make it executable:
 
@@ -25,12 +47,6 @@ Clone the repo and make it executable:
 git clone https://github.com/yourusername/files-sort.git
 cd files-sort
 chmod +x files-sort.py
-```
-
-Or install via pip (if packaged as a CLI tool):
-
-```bash
-pip install files-sort
 ```
 
 ---
@@ -105,30 +121,3 @@ At the end of execution, you'll see:
 -   Number of files moved or copied
 -   Number of files skipped
 -   Final categorization by folder
-
----
-
-## ✅ Requirements
-
--   Python 3.7+
--   [`colorama`](https://pypi.org/project/colorama/)
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## 🛠️ Dev Notes
-
--   The code uses a **strategy pattern** for sorting.
--   ANSI-colored logs with emoji indicators make output clean and user-friendly.
--   Modular design for future expansion.
-
----
-
-## 📄 License
-
-MIT © AfzGit
