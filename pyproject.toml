@@ -1,6 +1,6 @@
 [project]
 name = "files-sort"
-version = "1.0.2"
+version = "1.0.3"
 authors = [
   { name="AfzGit", email="sa15@duck.com" },
 ]
