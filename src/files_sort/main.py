@@ -161,9 +161,8 @@ class FileSorter:
         if isinstance(self.strategy, SizeSortStrategy):
             excluded_dirs = {str(self.directory / bucket[1]) for bucket in self.strategy.SIZE_BUCKETS}
         elif isinstance(self.strategy, ExtensionSortStrategy):
-            excluded_dirs = {str(self.directory / ext) for ext in ['no_ext'] + [
-                f.suffix.lower().lstrip(".") for f in self.directory.iterdir() if f.is_file()
-            ]}
+            excluded_dirs = {str(self.directory / ExtensionSortStrategy().get_extension(f)) 
+                 for f in self.directory.iterdir() if f.is_file()}
         elif isinstance(self.strategy, TimeSortStrategy):
             excluded_dirs = {str(self.directory / datetime.fromtimestamp(self.strategy.get_key(f)).strftime("%Y-%m-%d"))
                             for f in self.directory.iterdir() if f.is_file()}
