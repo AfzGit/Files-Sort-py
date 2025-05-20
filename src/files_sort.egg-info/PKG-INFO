@@ -1,3 +1,18 @@
+Metadata-Version: 2.4
+Name: files-sort
+Version: 1.0.0
+Summary: Sort files into sub-folders based on extensions, creation/modified times, and size.
+Author-email: AfzGit <sa15@duck.com>
+License-Expression: MIT
+Project-URL: Homepage, https://github.com/AfzGit/Files-Sort-py
+Project-URL: Issues, https://github.com/AfzGit/Files-Sort-py/issues
+Classifier: Programming Language :: Python :: 3
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Dynamic: license-file
+
 # 🗂️ files-sort
 
 A powerful command-line tool to **sort files** in a directory based on criteria like file **extension**, **size**, or **timestamps**. Supports copying, moving, dry runs, verbose output, and automatic cleanup of empty directories.
@@ -27,12 +42,6 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-or
-
-```bash
-pip install colorama
-```
-
 ---
 
 ## 📦 Installation
@@ -42,7 +51,7 @@ pip install colorama
 install via pip (if packaged as a CLI tool):
 
 ```bash
-pip install -i https://test.pypi.org/simple/ --no-deps files-sort
+pip install files-sort
 ```
 
 ## Option 2: Clone the repo
@@ -50,10 +59,9 @@ pip install -i https://test.pypi.org/simple/ --no-deps files-sort
 Clone the repo and make it executable:
 
 ```bash
-git clone https://github.com/AfzGit/Files-Sort-py.git
+git clone https://github.com/yourusername/files-sort.git
 cd files-sort
 chmod +x files-sort.py
-python files-sort.py -h
 ```
 
 ---

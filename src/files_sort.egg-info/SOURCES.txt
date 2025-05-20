@@ -1,0 +1,10 @@
+LICENSE
+README.md
+pyproject.toml
+src/files_sort/__init__.py
+src/files_sort/main.py
+src/files_sort.egg-info/PKG-INFO
+src/files_sort.egg-info/SOURCES.txt
+src/files_sort.egg-info/dependency_links.txt
+src/files_sort.egg-info/entry_points.txt
+src/files_sort.egg-info/top_level.txt
