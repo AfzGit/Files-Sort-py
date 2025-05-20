@@ -36,7 +36,7 @@ pip install -r requirements.txt
 install via pip (if packaged as a CLI tool):
 
 ```bash
-pip install files-sort
+pip install -i https://test.pypi.org/simple/ --no-deps files-sort
 ```
 
 ## Option 2: Clone the repo
@@ -44,9 +44,10 @@ pip install files-sort
 Clone the repo and make it executable:
 
 ```bash
-git clone https://github.com/yourusername/files-sort.git
+git clone https://github.com/AfzGit/Files-Sort-py.git
 cd files-sort
 chmod +x files-sort.py
+python files-sort.py -h
 ```
 
 ---
