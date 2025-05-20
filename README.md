@@ -39,10 +39,16 @@ pip install colorama
 
 ## Option 1: Pip
 
-install via pip (if packaged as a CLI tool):
+Install via pip (if packaged as a CLI tool):
 
 ```bash
 pip install -i https://test.pypi.org/simple/ --no-deps files-sort
+```
+
+To upgrade:
+
+```bash
+pip install -i --upgrade https://test.pypi.org/simple/ --no-deps files-sort
 ```
 
 ## Option 2: Clone the repo
