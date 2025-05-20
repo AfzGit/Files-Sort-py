@@ -1,3 +1,5 @@
+*egg-info
+*-info
 tmp/
 test/
 fsort.py
@@ -5,6 +7,4 @@ fsort2.py
 fsort3.py
 old/
 dist/
-*egg-info/
-*-info/
 install.md
