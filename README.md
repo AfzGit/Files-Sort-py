@@ -48,7 +48,7 @@ pip install -i https://test.pypi.org/simple/ --no-deps files-sort
 To upgrade:
 
 ```bash
-pip install -i --upgrade https://test.pypi.org/simple/ --no-deps files-sort
+pip install --upgrade -i https://test.pypi.org/simple/ --no-deps files-sort
 ```
 
 ## Option 2: Clone the repo
