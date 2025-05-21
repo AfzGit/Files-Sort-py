@@ -2,9 +2,9 @@
 
 A powerful command-line tool to **sort files** in a directory based on criteria like file **extension**, **size**, or **timestamps**. Supports copying, moving, dry runs, verbose output, and automatic cleanup of empty directories.
 
-![Showcase](Media/files-sort-demo.png)
+![🖼️ Showcase](Media/files-sort-demo.png)
 
-[![Watch the video]()](Media/files-sort-demo.gif)
+[![📺 Watch the video]()](Media/files-sort-demo.gif)
 
 ## 🚀 Features
 
