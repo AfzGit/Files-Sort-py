@@ -4,10 +4,7 @@ A powerful command-line tool to **sort files** in a directory based on criteria 
 
 ![Showcase](Media/files-sort-demo.png)
 
-<video width="640" controls>
-  <source src="Media/files-sort-demo.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+[![Watch the video]()](Media/files-sort-demo.mp4)
 
 ---
 
