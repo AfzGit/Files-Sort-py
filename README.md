@@ -4,7 +4,7 @@ A powerful command-line tool to **sort files** in a directory based on criteria 
 
 ![Showcase](Media/files-sort-demo.png)
 
-[![Watch the video]()](Media/files-sort-demo.mp4)
+[![Watch the video]()](Media/files-sort-demo.gif)
 
 ## 🚀 Features
 
