@@ -6,8 +6,6 @@ A powerful command-line tool to **sort files** in a directory based on criteria 
 
 [![Watch the video]()](Media/files-sort-demo.mp4)
 
----
-
 ## 🚀 Features
 
 -   📄 **Sort by Extension**: Groups files by file type (e.g., `.jpg`, `.pdf`).
@@ -17,8 +15,6 @@ A powerful command-line tool to **sort files** in a directory based on criteria 
 -   🔍 **Dry Run Support**: Simulate the process before applying any changes.
 -   💬 **Interactive Prompts**: Ask before overwriting or skipping conflicting files.
 -   📁 **Recursive Support**: Process subdirectories.
-
----
 
 ## ✅ Requirements
 
@@ -36,8 +32,6 @@ or
 ```bash
 pip install colorama
 ```
-
----
 
 ## 📦 Installation
 
@@ -66,8 +60,6 @@ chmod +x files-sort.py
 python files-sort.py -h
 ```
 
----
-
 ## 🧩 Usage
 
 ```bash
@@ -85,8 +77,6 @@ files-sort [OPTIONS] DIRECTORY
 | `-f`, `--force`     | Skip confirmation prompts and overwrite existing files.                 |
 | `-r`, `--recursive` | Include subdirectories recursively.                                     |
 | `-u`, `--unique`    | List unique file extensions in the directory and exit.                  |
-
----
 
 ## 📂 Examples
 
@@ -120,15 +110,11 @@ files-sort -s extension -c -f ~/Videos
 files-sort -u ~/Downloads
 ```
 
----
-
 ## 🧼 Auto Cleanup
 
 If `--recursive` is used, the tool will also:
 
 -   Detect and optionally remove empty directories after sorting.
-
----
 
 ## 📊 Output Summary
 
